@@ -72,7 +72,9 @@ Deixe público, ou não há como corrigir. Settings → General → Danger Zone 
 Exporte as que ainda existirem e **declare a lacuna no relatório**, dizendo a partir de quando o registro começa. Declarar custa pouco; ser pego com sessões todas datadas do último dia custa muito mais.
 
 **"O `/export` não está funcionando."**
-Como alternativa: as conversas do Claude Code ficam em `~/.claude/projects/<slug-do-projeto>/` em arquivos `.jsonl`. Copie os do período do desafio para `docs/sessions/` e explique no relatório por que o formato é esse.
+Como alternativa: as conversas do Claude Code ficam em `~/.claude/projects/<slug-do-projeto>/` em arquivos `.jsonl` Copie os do período do desafio para `docs/sessions/` e explique no relatório por que o formato é esse.
+Ou então execute o seguinte prompt no chat ```Export all messages in this context window as a single block I can copy/paste. Redact personally identifiable user information such as home directory name.``` copie e coloque em um arquivo em `docs/sessions/export.md` 
+
 
 **"Vou entregar depois do prazo."**
 Entregue assim mesmo e diga no formulário. Atraso declarado é uma conversa; entrega silenciosamente atrasada é outra.

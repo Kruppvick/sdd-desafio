@@ -73,9 +73,7 @@ Exporte as que ainda existirem e **declare a lacuna no relatório**, dizendo a p
 
 **"O `/export` não está funcionando."**
 Como alternativa: as conversas do Claude Code ficam em `~/.claude/projects/<slug-do-projeto>/` em arquivos `.jsonl` Copie os do período do desafio para `docs/sessions/` e explique no relatório por que o formato é esse.
-Ou então execute o seguinte prompt no chat ```text 
-Exporte todas as mensagens desta janela de contexto como um único bloco que eu possa copiar e colar. Oculte informações pessoais identificáveis do usuário, como o nome do diretório pessoal.
-``` copie e coloque em um arquivo em `docs/sessions/export.md` 
+Ou então execute o seguinte prompt no chat ```Exporte todas as mensagens desta janela de contexto como um único bloco que eu possa copiar e colar. Oculte informações pessoais identificáveis do usuário, como o nome do diretório pessoal.``` copie e coloque em um arquivo em `docs/sessions/export.md` 
 
 
 **"Vou entregar depois do prazo."**

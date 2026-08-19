@@ -7,6 +7,7 @@ from src.normalizacao import normalizar_data
 from src.preparacao import preparar_despesas
 from src.resultado import calcular_resumo
 from src.validacao import validar_entrada
+from src.motivos import descricao_motivo
 
 
 def criar_parser() -> argparse.ArgumentParser:
@@ -73,7 +74,7 @@ def _serializar_despesa(resultado):
         "motivos": [
             {
                 "codigo": motivo,
-                "descricao": motivo,
+                "descricao": descricao_motivo(motivo),
             }
             for motivo in resultado["motivos"]
         ],

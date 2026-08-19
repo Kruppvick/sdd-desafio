@@ -55,6 +55,7 @@ def calcular_reembolsos(
             resultado["motivos"].append(
                 "VALOR_NAO_POSITIVO"
             )
+
             resultados.append(
                 _finalizar(resultado)
             )
@@ -65,6 +66,7 @@ def calcular_reembolsos(
             resultado["motivos"].append(
                 "CATEGORIA_NAO_REEMBOLSAVEL"
             )
+
             resultados.append(
                 _finalizar(resultado)
             )
@@ -79,6 +81,7 @@ def calcular_reembolsos(
             resultado["motivos"].append(
                 "FORA_COMPETENCIA"
             )
+
             resultados.append(
                 _finalizar(resultado)
             )
@@ -93,6 +96,7 @@ def calcular_reembolsos(
             resultado["motivos"].append(
                 "DUPLICATA"
             )
+
             resultados.append(
                 _finalizar(resultado)
             )
@@ -110,6 +114,7 @@ def calcular_reembolsos(
             resultado["motivos"].append(
                 "NOTA_FISCAL_OBRIGATORIA"
             )
+
             resultados.append(
                 _finalizar(resultado)
             )
@@ -148,19 +153,18 @@ def calcular_reembolsos(
             reembolsavel
         )
 
-        # RN-004 — motivo de reembolso parcial
-        if (
-            reembolsavel > ZERO
-            and reembolsavel < valor
-        ):
+        # RN-004 — motivo quando o limite reduz o reembolso
+        if reembolsavel < valor:
             if categoria == "alimentacao":
                 resultado["motivos"].append(
                     "LIMITE_DIARIO_ALIMENTACAO"
                 )
+
             elif categoria == "transporte_urbano":
                 resultado["motivos"].append(
                     "LIMITE_DIARIO_TRANSPORTE"
                 )
+
             elif categoria == "hospedagem":
                 resultado["motivos"].append(
                     "LIMITE_HOSPEDAGEM"

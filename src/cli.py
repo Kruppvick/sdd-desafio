@@ -2,6 +2,12 @@ import argparse
 import json
 from pathlib import Path
 
+from src.motor import calcular_reembolsos
+from src.normalizacao import normalizar_data
+from src.preparacao import preparar_despesas
+from src.resultado import calcular_resumo
+from src.validacao import validar_entrada
+
 
 def criar_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -33,6 +39,47 @@ def criar_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _formatar_decimal(valor):
+    return f"{valor:.2f}"
+
+
+def _serializar_resumo(resumo):
+    return {
+        "total_solicitado": _formatar_decimal(
+            resumo["total_solicitado"]
+        ),
+        "total_reembolsavel": _formatar_decimal(
+            resumo["total_reembolsavel"]
+        ),
+        "total_nao_reembolsavel": _formatar_decimal(
+            resumo["total_nao_reembolsavel"]
+        ),
+    }
+
+
+def _serializar_despesa(resultado):
+    return {
+        "id": resultado["id"],
+        "valor_solicitado": _formatar_decimal(
+            resultado["valor_solicitado"]
+        ),
+        "valor_reembolsavel": _formatar_decimal(
+            resultado["valor_reembolsavel"]
+        ),
+        "valor_nao_reembolsavel": _formatar_decimal(
+            resultado["valor_nao_reembolsavel"]
+        ),
+        "status": resultado["status"],
+        "motivos": [
+            {
+                "codigo": motivo,
+                "descricao": motivo,
+            }
+            for motivo in resultado["motivos"]
+        ],
+    }
+
+
 def executar_calculo(
     caminho_entrada: str,
     caminho_saida: str,
@@ -46,6 +93,24 @@ def executar_calculo(
     ) as arquivo:
         dados = json.load(arquivo)
 
+    validar_entrada(dados)
+
+    despesas = preparar_despesas(
+        dados["despesas"]
+    )
+
+    resultados = calcular_reembolsos(
+        despesas=despesas,
+        inicio=normalizar_data(
+            dados["periodo"]["inicio"]
+        ),
+        fim=normalizar_data(
+            dados["periodo"]["fim"]
+        ),
+    )
+
+    resumo = calcular_resumo(resultados)
+
     resultado = {
         "schema_version": "1.0",
         "colaborador": {
@@ -54,12 +119,11 @@ def executar_calculo(
         "periodo": {
             "competencia": dados["periodo"]["competencia"],
         },
-        "resumo": {
-            "total_solicitado": "0.00",
-            "total_reembolsavel": "0.00",
-            "total_nao_reembolsavel": "0.00",
-        },
-        "despesas": [],
+        "resumo": _serializar_resumo(resumo),
+        "despesas": [
+            _serializar_despesa(item)
+            for item in resultados
+        ],
     }
 
     with saida.open(

@@ -149,3 +149,64 @@ def test_cli_processa_arquivo_de_exemplo(tmp_path):
     assert "resumo" in conteudo
     assert "despesas" in conteudo
     assert len(conteudo["despesas"]) > 0
+
+def test_cli_serializa_descricao_legivel_do_motivo(tmp_path):
+    arquivo_entrada = tmp_path / "entrada.json"
+    arquivo_saida = tmp_path / "saida.json"
+
+    entrada = {
+        "colaborador": {
+            "id": "c-001",
+            "nome": "Teste",
+            "centro_custo": "CC-TESTE",
+        },
+        "periodo": {
+            "competencia": "2026-07",
+            "inicio": "2026-07-01",
+            "fim": "2026-07-31",
+        },
+        "despesas": [
+            {
+                "id": "d-001",
+                "data": "2026-07-10",
+                "categoria": "coworking",
+                "descricao": "Sala",
+                "fornecedor": "Coworking X",
+                "valor": 50,
+                "tem_nota_fiscal": True,
+            }
+        ],
+    }
+
+    arquivo_entrada.write_text(
+        json.dumps(entrada),
+        encoding="utf-8",
+    )
+
+    resultado = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "src",
+            "calcular",
+            "--input",
+            str(arquivo_entrada),
+            "--output",
+            str(arquivo_saida),
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert resultado.returncode == 0
+
+    saida = json.loads(
+        arquivo_saida.read_text(encoding="utf-8")
+    )
+
+    motivo = saida["despesas"][0]["motivos"][0]
+
+    assert motivo["codigo"] == "CATEGORIA_NAO_REEMBOLSAVEL"
+    assert motivo["descricao"] == (
+        "A categoria informada não é reembolsável pela política."
+    )

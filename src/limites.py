@@ -18,3 +18,12 @@ def aplicar_limite_diario(
         return valor
 
     return disponivel
+
+def aplicar_limite_por_item(
+    valor: Decimal,
+    limite: Decimal,
+) -> Decimal:
+    if valor <= limite:
+        return valor
+
+    return limite

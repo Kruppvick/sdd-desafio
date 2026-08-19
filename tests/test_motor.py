@@ -83,6 +83,34 @@ def test_rn013_duplicata_nao_consome_limite_novamente():
     assert resultados[1]["valor_reembolsavel"] == Decimal("0.00")
     assert resultados[2]["valor_reembolsavel"] == Decimal("20.00")
 
+def test_rn001_limite_totalmente_consumido_gera_motivo():
+    despesas = [
+        criar_despesa(
+            id="d-001",
+            valor=Decimal("60.00"),
+            descricao="Almoco",
+        ),
+        criar_despesa(
+            id="d-002",
+            valor=Decimal("38.00"),
+            descricao="Jantar",
+        ),
+    ]
+
+    despesas[1]["indice_entrada"] = 1
+
+    resultados = calcular_reembolsos(
+        despesas=despesas,
+        inicio=date(2026, 7, 1),
+        fim=date(2026, 7, 31),
+    )
+
+    assert resultados[0]["valor_reembolsavel"] == Decimal("60.00")
+
+    assert resultados[1]["valor_reembolsavel"] == Decimal("0.00")
+    assert resultados[1]["status"] == "RECUSADA"
+    assert "LIMITE_DIARIO_ALIMENTACAO" in resultados[1]["motivos"]
+
 
 def test_rn014_ordem_original_define_consumo():
     despesas = [

@@ -149,3 +149,89 @@ def test_rn022_categoria_com_limite_zero_nao_e_categoria_ausente():
     assert resultados[0]["status"] == "RECUSADA"
     assert "CATEGORIA_NAO_REEMBOLSAVEL" not in resultados[0]["motivos"]
     assert "LIMITE_HOSPEDAGEM" in resultados[0]["motivos"]
+
+def test_rn023_representacao_presente_na_politica_e_reembolsavel():
+    despesas = [
+        criar_despesa(
+            id="d-001",
+            categoria="representacao",
+            valor="200.00",
+        )
+    ]
+
+    politica = {
+        "representacao": Decimal("300.00"),
+    }
+
+    resultados = calcular_reembolsos(
+        despesas=despesas,
+        inicio=date(2026, 7, 1),
+        fim=date(2026, 7, 31),
+        politica=politica,
+    )
+
+    assert resultados[0]["valor_reembolsavel"] == Decimal("200.00")
+    assert resultados[0]["status"] == "APROVADA"
+
+
+def test_rn023_representacao_ausente_da_politica_e_recusada():
+    despesas = [
+        criar_despesa(
+            id="d-001",
+            categoria="representacao",
+            valor="50.00",
+        )
+    ]
+
+    politica = {
+        "alimentacao": Decimal("90.00"),
+    }
+
+    resultados = calcular_reembolsos(
+        despesas=despesas,
+        inicio=date(2026, 7, 1),
+        fim=date(2026, 7, 31),
+        politica=politica,
+    )
+
+    assert resultados[0]["valor_reembolsavel"] == Decimal("0.00")
+    assert resultados[0]["status"] == "RECUSADA"
+    assert (
+        "CATEGORIA_NAO_REEMBOLSAVEL"
+        in resultados[0]["motivos"]
+    )
+
+
+def test_rn023_representacao_compartilha_limite_diario():
+    despesas = [
+        criar_despesa(
+            id="d-001",
+            categoria="representacao",
+            valor="200.00",
+            indice_entrada=0,
+        ),
+        criar_despesa(
+            id="d-002",
+            categoria="representacao",
+            valor="200.00",
+            indice_entrada=1,
+        ),
+    ]
+
+    # Evita que RN-008 trate os lançamentos como duplicados.
+    despesas[1]["descricao"] = "Despesa representacao 2"
+
+    politica = {
+        "representacao": Decimal("300.00"),
+    }
+
+    resultados = calcular_reembolsos(
+        despesas=despesas,
+        inicio=date(2026, 7, 1),
+        fim=date(2026, 7, 31),
+        politica=politica,
+    )
+
+    assert resultados[0]["valor_reembolsavel"] == Decimal("200.00")
+    assert resultados[1]["valor_reembolsavel"] == Decimal("100.00")
+    assert resultados[1]["status"] == "PARCIAL"

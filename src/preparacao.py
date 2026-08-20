@@ -1,6 +1,7 @@
 from src.normalizacao import (
     normalizar_categoria,
     normalizar_data,
+    normalizar_moeda,
     normalizar_valor,
 )
 
@@ -22,6 +23,10 @@ def preparar_despesas(despesas):
                 "valor_original": despesa["valor"],
                 "valor_normalizado": normalizar_valor(
                     despesa["valor"]
+                ),
+                "moeda_original": despesa.get("moeda", "BRL"),
+                "moeda_normalizada": normalizar_moeda(
+                    despesa.get("moeda")
                 ),
                 "tem_nota_fiscal": despesa["tem_nota_fiscal"],
                 "indice_entrada": indice,

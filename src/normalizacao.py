@@ -20,3 +20,9 @@ def normalizar_valor(valor) -> Decimal:
 
 def normalizar_data(valor: str) -> date:
     return date.fromisoformat(valor)
+
+def normalizar_moeda(valor):
+    if valor is None:
+        return "BRL"
+
+    return str(valor).strip().upper()

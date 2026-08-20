@@ -32,3 +32,26 @@ def test_rn010_normaliza_categoria(entrada, esperado):
 )
 def test_rn011_normaliza_valor(entrada, esperado):
     assert normalizar_valor(entrada) == esperado
+
+def test_rn018_moeda_ausente_assume_brl():
+    from src.normalizacao import normalizar_moeda
+
+    assert normalizar_moeda(None) == "BRL"
+
+
+def test_rn018_normaliza_moeda_minuscula():
+    from src.normalizacao import normalizar_moeda
+
+    assert normalizar_moeda("usd") == "USD"
+
+
+def test_rn018_normaliza_moeda_com_espacos():
+    from src.normalizacao import normalizar_moeda
+
+    assert normalizar_moeda(" USD ") == "USD"
+
+
+def test_rn018_preserva_brl():
+    from src.normalizacao import normalizar_moeda
+
+    assert normalizar_moeda("BRL") == "BRL"   

@@ -7,3 +7,16 @@ def identidade_duplicidade(despesa: dict) -> tuple:
         despesa["valor_normalizado"],
         despesa["tem_nota_fiscal"],
     )
+
+def identidade_duplicidade(
+    despesa: dict,
+):
+    return (
+        despesa["data"],
+        despesa["categoria_normalizada"],
+        despesa["descricao"],
+        despesa["fornecedor"],
+        despesa["moeda_normalizada"],
+        despesa["valor_normalizado"],
+        despesa["tem_nota_fiscal"],
+    )

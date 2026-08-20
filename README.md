@@ -1,128 +1,52 @@
-# Desafio Prático — Spec Driven Development
-
-Aula bônus de SDD, fechando a trilha:
-
-`AI Fluency` → `Claude 101` → `Claude Code 101` → `Building with the Claude API` → `Claude Code in Action` → `Módulo SDD` → **Desafio**
-
-**Individual · 2 dias · Claude Code**
-
----
-
-## Comece por aqui
-
-1. **[`DESAFIO.md`](DESAFIO.md)** — o enunciado. Leia inteiro antes de escrever qualquer coisa.
-2. **[`RUBRICA.md`](RUBRICA.md)** — como você é avaliado. É pública de propósito; leia antes de começar.
-3. **[`exemplos/despesas-exemplo.json`](exemplos/despesas-exemplo.json)** — a entrada de referência. Não é decoração: percorra item por item antes de escrever a spec.
-4. **[`FAQ.md`](FAQ.md)** — travou? Comece por aqui. **O instrutor está fora durante o desafio**, então o FAQ é o canal de suporte.
-
----
-
-## Como participar
-
-**1. Faça um fork deste repositório.** Ele precisa ser público, ou você não conseguirá compartilhar depois.
-
-**2. Clone o seu fork e prepare a estrutura de trabalho:**
-
-```bash
-git clone https://github.com/<seu-usuario>/sdd-desafio.git
-cd sdd-desafio
-cp template/CLAUDE.md .
-cp -r template/specs .
-cp -r template/docs .
-git add -A && git commit -m "chore: estrutura inicial a partir do template"
-```
-
-<details>
-<summary>PowerShell</summary>
-
-```powershell
-git clone https://github.com/<seu-usuario>/sdd-desafio.git
-cd sdd-desafio
-Copy-Item template\CLAUDE.md .
-Copy-Item template\specs . -Recurse
-Copy-Item template\docs . -Recurse
-git add -A; git commit -m "chore: estrutura inicial a partir do template"
-```
-</details>
-
-Os arquivos em `template/` são esqueletos com as perguntas que cada documento precisa responder. Deixe a pasta `template/` onde está — ela serve de referência.
-
-**3. Trabalhe no seu fork**, seguindo as três regras do jogo descritas no [`DESAFIO.md`](DESAFIO.md):
-
-- Nenhum commit sem task
-- Explicação no chat que não está na spec é bug de spec
-- Interações exportadas (`/export`) e commitadas em `docs/sessions/`
-
-**4. No Dia 2, às 10h**, você recebe uma mudança de requisito pelo canal da turma. Ela é obrigatória e vale 20 pontos. Chegue nesse momento com o sistema base funcionando e testado.
-
-> Durante os dois dias o instrutor está de férias e não responde mensagens. Dúvida de processo: [`FAQ.md`](FAQ.md). Dúvida sobre o que a política do RH significa não tem resposta — decidir isso é o exercício.
-
-**5. Entregue** enviando o link do seu fork no formulário. Prazo: **Dia 2, 18h**.
-
----
-
-## O que o seu fork precisa conter ao final
-
-```
-seu-fork/
-├── CLAUDE.md                     # convenções do projeto para o agente
-├── README.md                     # como rodar e como testar o SEU projeto
-├── specs/
-│   └── 001-motor-reembolso/
-│       ├── spec.md               # o QUÊ e o PORQUÊ
-│       ├── plan.md               # o COMO
-│       ├── tasks.md              # T-001..T-0NN, com critério de aceite
-│       └── DECISIONS.md          # log de mudanças de spec
-├── src/
-├── tests/
-└── docs/
-    ├── sessions/                 # exports das suas conversas com o Claude
-    └── RELATORIO.md              # o relatório final
-```
-
-Sobre o `README.md`: substitua este arquivo pelo README do **seu** projeto — como rodar, como testar, o que você construiu. Um README que não permite rodar o projeto custa pontos.
-
----
-
-## Antes de começar, confirme que o `/export` funciona
-
-Abra o Claude Code, troque duas mensagens, rode `/export` e confirme que o arquivo foi gerado.
-
-Faça isso **agora**, não no Dia 2. Sem `docs/sessions/`, o critério de relatório vale zero — e já aconteceu de gente que fez tudo certo descobrir no último dia que não tinha registro nenhum do trabalho.
-
-Exporte ao final de **cada** sessão, nomeando `docs/sessions/01-descricao-curta.md`, `02-...`, e assim por diante.
-
----
-
-## O resumo em um parágrafo
-
-Você vai receber uma política de reembolso escrita por um RH, com a redação ruim que uma política de RH real tem. Ela é ambígua em vários pontos, e você não tem acesso a ninguém para tirar dúvida. O trabalho não é implementar — é **especificar**: encontrar cada ambiguidade, decidir explicitamente, justificar e registrar. O produto funcionando vale **10 dos 100 pontos**. Os outros 90 estão na spec, na rastreabilidade `spec → tasks → commits → testes`, na resposta à mudança de requisito do Dia 2 e no relatório.
-
-Isso é deliberado. Um projeto que roda perfeitamente com spec fraca tira nota baixa; um projeto com bug conhecido, spec impecável e trilha limpa tira nota alta.
-
 # Motor de Cálculo de Reembolso
 
-Motor de cálculo de reembolso desenvolvido a partir da Política de Reembolso v3.
+Motor de cálculo de reembolso desenvolvido com abordagem **Spec Driven Development (SDD)**.
 
-A aplicação recebe um arquivo JSON com despesas de um colaborador, aplica as regras definidas na especificação e produz um arquivo JSON com o valor reembolsável e a justificativa de cada decisão.
+O projeto foi inicialmente implementado para a Política de Reembolso v3 e posteriormente evoluído para atender à **Política de Reembolso v4**, preservando a rastreabilidade entre especificação, decisões, tasks, testes e implementação.
+
+A Política v4 introduz:
+
+- limites definidos externamente e variáveis por centro de custo;
+- política padrão para centros de custo sem configuração específica;
+- categoria `representacao`;
+- despesas em moedas estrangeiras;
+- conversão para BRL utilizando cotações históricas;
+- preservação do valor e da moeda originais no resultado;
+- schema de saída versão `2.0`.
+
+A funcionalidade opcional de aprovação manual não faz parte desta entrega, conforme decisão registrada na especificação.
+
+---
 
 ## Requisitos
 
 - Python 3.12 ou superior
 - `pytest` para execução dos testes
 
-## Criar ambiente virtual
+O projeto utiliza apenas a biblioteca padrão do Python em sua implementação.
 
-No Windows PowerShell:
+---
+
+## Preparar o ambiente
+
+### Windows PowerShell
+
+Crie o ambiente virtual:
 
 ```powershell
 python -m venv .venv
 ```
 
-Ative o ambiente:
+Ative:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
+```
+
+Instale o `pytest`:
+
+```powershell
+python -m pip install pytest
 ```
 
 Após a ativação, o terminal deve apresentar algo semelhante a:
@@ -131,43 +55,362 @@ Após a ativação, o terminal deve apresentar algo semelhante a:
 (.venv) PS C:\caminho\do\projeto>
 ```
 
-## Instalar dependências de desenvolvimento
-
-Com o ambiente virtual ativo:
-
-```powershell
-python -m pip install pytest
-```
-
-## Executar o motor
-
-A interface da aplicação é:
-
-```text
-python -m src calcular --input <arquivo-entrada> --output <arquivo-saida>
-```
-
-Exemplo utilizando o arquivo fornecido pelo desafio:
-
-```powershell
-python -m src calcular --input exemplos/despesas-exemplo.json --output resultado.json
-```
-
-O arquivo indicado em `--output` será criado contendo o resultado do cálculo.
+---
 
 ## Executar os testes
 
-Para executar toda a suíte:
+Para executar toda a suíte automatizada:
 
 ```powershell
 python -m pytest -q
 ```
 
-Para executar um arquivo de testes específico:
+Para executar apenas um arquivo:
 
 ```powershell
-python -m pytest tests/test_cli.py -q
+python -m pytest tests/test_cli_v4.py -q
 ```
+
+Alguns grupos relevantes de testes são:
+
+```text
+test_normalizacao.py
+test_politica.py
+test_motor_politica.py
+test_cambio.py
+test_duplicidade.py
+test_nota_fiscal_cambio.py
+test_motor_cambio.py
+test_dados_v4.py
+test_cli_v4.py
+```
+
+Além dos testes da Política v4, os testes criados para a baseline v3 foram preservados para detectar regressões.
+
+---
+
+## Executar o motor
+
+A operação disponível na CLI é:
+
+```text
+calcular
+```
+
+A interface básica é:
+
+```text
+python -m src calcular --input <entrada> --output <saida>
+```
+
+Para a Política v4, a CLI também aceita:
+
+```text
+--politica <arquivo-politica>
+--cambio <arquivo-cambio>
+```
+
+Portanto, uma execução completa da v4 utiliza:
+
+```text
+python -m src calcular \
+  --input <entrada> \
+  --output <saida> \
+  --politica <politica> \
+  --cambio <cambio>
+```
+
+No PowerShell, utilize crase para quebrar o comando em várias linhas.
+
+---
+
+## Executar o envelope da Política v4
+
+Os arquivos recebidos com a mudança de requisito estão preservados em:
+
+```text
+exemplos/envelope/
+├── 00-ENVELOPE-LACRADO.md
+├── cambio.json
+├── despesas-envelope.json
+├── despesas-envelope-cc-desconhecido.json
+└── politica-v4.json
+```
+
+### Cenário CC-COMERCIAL
+
+Execute:
+
+```powershell
+python -m src calcular `
+  --input .\exemplos\envelope\despesas-envelope.json `
+  --output .\resultado-v4.json `
+  --politica .\exemplos\envelope\politica-v4.json `
+  --cambio .\exemplos\envelope\cambio.json
+```
+
+Para visualizar:
+
+```powershell
+Get-Content .\resultado-v4.json -Encoding UTF8
+```
+
+Nesse cenário, a política específica de `CC-COMERCIAL` é utilizada.
+
+---
+
+## Executar cenário com centro de custo desconhecido
+
+O envelope também contém um colaborador cujo centro de custo, `CC-SUPORTE-N2`, não possui configuração específica.
+
+Execute:
+
+```powershell
+python -m src calcular `
+  --input .\exemplos\envelope\despesas-envelope-cc-desconhecido.json `
+  --output .\resultado-v4-padrao.json `
+  --politica .\exemplos\envelope\politica-v4.json `
+  --cambio .\exemplos\envelope\cambio.json
+```
+
+Nesse caso, o motor utiliza a política `padrao`.
+
+---
+
+## Política por centro de custo
+
+Os limites não são constantes no código.
+
+A Política v4 é carregada de:
+
+```text
+exemplos/envelope/politica-v4.json
+```
+
+O motor utiliza:
+
+```text
+colaborador.centro_custo
+        ↓
+existe configuração específica?
+        ↓
+sim  → política específica
+não  → política padrao
+```
+
+Não é realizada correspondência parcial entre nomes de centros de custo.
+
+Por exemplo, a ausência de `CC-SUPORTE-N2` não faz o sistema utilizar automaticamente uma configuração chamada `CC-SUPORTE`, caso ela exista.
+
+---
+
+## Categorias e limites
+
+As categorias contempladas e seus limites dependem da política selecionada.
+
+Na Política v4 fornecida, por exemplo, `CC-COMERCIAL` possui a categoria:
+
+```text
+representacao
+```
+
+com limite diário próprio.
+
+Uma categoria ausente da política selecionada é tratada como não contemplada.
+
+Uma categoria presente com limite igual a R$ 0,00 é diferente de uma categoria ausente: ela é reconhecida pela política, mas nenhum valor pode ser reembolsado.
+
+---
+
+## Moedas
+
+Cada despesa pode informar:
+
+```json
+"moeda": "EUR"
+```
+
+O campo é opcional.
+
+Quando `moeda` estiver ausente:
+
+```text
+moeda = BRL
+```
+
+O código da moeda é normalizado removendo espaços externos e ignorando diferenças entre letras maiúsculas e minúsculas.
+
+Exemplos:
+
+```text
+usd
+USD
+ USD
+```
+
+são tratados como:
+
+```text
+USD
+```
+
+A moeda não é inferida a partir de fornecedor ou descrição.
+
+---
+
+## Conversão cambial
+
+Os limites da política são sempre aplicados em BRL.
+
+Para uma despesa estrangeira, o fluxo é:
+
+```text
+valor original
+      ↓
+normalização monetária
+      ↓
+cotação histórica
+      ↓
+conversão para BRL
+      ↓
+normalização para centavos
+      ↓
+nota fiscal
+      ↓
+limite da categoria
+```
+
+Quando existe cotação exatamente na data da despesa, ela é utilizada.
+
+Quando não existe cotação naquela data, o motor utiliza a cotação disponível mais recente anterior para a mesma moeda.
+
+Cotações futuras não são utilizadas.
+
+Essa decisão permite tratar, por exemplo, despesas realizadas em fins de semana sem utilizar informação cambial posterior à despesa.
+
+---
+
+## Moeda sem cotação
+
+Quando não existe cotação utilizável para a moeda da despesa, o lançamento é recusado com:
+
+```text
+COTACAO_NAO_DISPONIVEL
+```
+
+Nesse caso:
+
+- o valor reembolsável é R$ 0,00;
+- nenhum limite é consumido;
+- não é utilizada taxa igual a 1;
+- não é utilizada taxa de outra moeda;
+- não é utilizada cotação futura;
+- nenhuma consulta externa é realizada.
+
+O valor e a moeda originalmente recebidos permanecem disponíveis no resultado.
+
+---
+
+## Nota fiscal
+
+Nota fiscal é obrigatória quando o valor considerado em BRL for **estritamente superior a R$ 100,00**.
+
+Portanto:
+
+```text
+R$ 100,00 → não exige nota por essa regra
+R$ 100,01 → exige nota
+```
+
+Para despesas estrangeiras, a verificação ocorre depois da conversão e do arredondamento para BRL.
+
+---
+
+## Duplicidade
+
+A identificação de duplicidade utiliza:
+
+- data;
+- categoria normalizada;
+- descrição;
+- fornecedor;
+- moeda original normalizada;
+- valor original normalizado;
+- indicador de nota fiscal.
+
+O `id` não participa da identidade.
+
+O valor convertido para BRL também não participa.
+
+A primeira ocorrência é avaliada normalmente e ocorrências posteriores são recusadas como duplicatas.
+
+---
+
+## Ordem e consumo dos limites
+
+Para limites diários, despesas elegíveis consomem o valor disponível seguindo a ordem original da entrada.
+
+Somente valores efetivamente reembolsados consomem limite.
+
+Portanto, não consomem limite despesas recusadas por motivos como:
+
+- categoria não contemplada;
+- fora da competência;
+- duplicidade;
+- nota fiscal obrigatória ausente;
+- valor não positivo;
+- cotação indisponível.
+
+---
+
+## Saída
+
+A Política v4 utiliza:
+
+```json
+"schema_version": "2.0"
+```
+
+Cada despesa possui informações como:
+
+```json
+{
+  "id": "e-002",
+  "valor_original": "22.00",
+  "moeda_original": "EUR",
+  "valor_solicitado": "130.46",
+  "valor_reembolsavel": "90.00",
+  "valor_nao_reembolsavel": "40.46",
+  "status": "PARCIAL",
+  "motivos": []
+}
+```
+
+`valor_original` representa o valor normalizado na moeda de origem.
+
+`moeda_original` identifica essa moeda.
+
+Os campos:
+
+```text
+valor_solicitado
+valor_reembolsavel
+valor_nao_reembolsavel
+```
+
+representam valores em BRL utilizados pelo cálculo.
+
+O resumo também é expresso em BRL.
+
+Os status possíveis são:
+
+- `APROVADA`;
+- `PARCIAL`;
+- `RECUSADA`.
+
+Toda despesa `PARCIAL` ou `RECUSADA` possui ao menos um motivo.
+
+---
 
 ## Estrutura do projeto
 
@@ -176,6 +419,8 @@ python -m pytest tests/test_cli.py -q
 ├── CLAUDE.md
 ├── README.md
 ├── exemplos/
+│   ├── despesas-exemplo.json
+│   └── envelope/
 ├── specs/
 │   └── 001-motor-reembolso/
 │       ├── spec.md
@@ -189,9 +434,11 @@ python -m pytest tests/test_cli.py -q
     └── RELATORIO.md
 ```
 
+---
+
 ## Documentação da especificação
 
-A fonte de verdade para as regras de negócio é:
+A fonte de verdade para o comportamento é:
 
 ```text
 specs/001-motor-reembolso/spec.md
@@ -203,90 +450,105 @@ O plano técnico está em:
 specs/001-motor-reembolso/plan.md
 ```
 
-As tarefas e sua rastreabilidade estão em:
+As tasks e a matriz de rastreabilidade estão em:
 
 ```text
 specs/001-motor-reembolso/tasks.md
 ```
 
-Mudanças posteriores à baseline são registradas em:
+Mudanças posteriores à baseline estão registradas em:
 
 ```text
 specs/001-motor-reembolso/DECISIONS.md
 ```
 
-## Interface de entrada
-
-A entrada deve seguir o formato definido em:
+O envelope original da mudança de requisito foi preservado em:
 
 ```text
-exemplos/despesas-exemplo.json
+exemplos/envelope/
 ```
 
-A operação obrigatória é:
+---
+
+## Evolução da Política v3 para v4
+
+A baseline inicial implementava a Política v3.
+
+Depois da conclusão e validação dessa baseline, a Política v4 invalidou algumas premissas, principalmente:
 
 ```text
-calcular
+limites fixos
+      ↓
+limites externos por centro de custo
+
+política única
+      ↓
+política específica + política padrão
+
+somente BRL
+      ↓
+múltiplas moedas + conversão histórica
+
+categorias globais
+      ↓
+categorias determinadas pela política
 ```
 
-Os argumentos são:
+A evolução foi realizada seguindo:
 
-- `--input`: caminho do JSON de entrada;
-- `--output`: caminho do JSON de saída.
-
-## Saída
-
-A saída contém:
-
-- identificação do colaborador;
-- competência processada;
-- resumo financeiro;
-- uma decisão para cada despesa;
-- valor solicitado;
-- valor reembolsável;
-- valor não reembolsável;
-- status;
-- motivos da decisão.
-
-Os possíveis status são:
-
-- `APROVADA`;
-- `PARCIAL`;
-- `RECUSADA`.
-
-## Exemplo de execução
-
-```powershell
-python -m src calcular --input exemplos/despesas-exemplo.json --output resultado.json
+```text
+envelope
+   ↓
+spec.md
+   ↓
+DECISIONS.md
+   ↓
+tasks.md
+   ↓
+plan.md
+   ↓
+testes
+   ↓
+implementação
 ```
 
-Depois, no PowerShell, o resultado pode ser visualizado com:
+A mudança está registrada como `D-001` no log de decisões.
 
-```powershell
-Get-Content resultado.json
-```
+---
+
+## Aprovação manual
+
+O envelope da Política v4 apresenta uma fila de aprovação manual como requisito opcional.
+
+Essa funcionalidade **não foi implementada nesta entrega**.
+
+A decisão está explicitamente registrada na especificação como fora de escopo, evitando introduzir estados ou comportamentos opcionais antes da conclusão dos requisitos obrigatórios.
+
+---
 
 ## Processo de desenvolvimento
 
-O projeto segue uma abordagem orientada por especificação.
+O projeto segue Spec Driven Development.
 
-Mudanças de comportamento devem seguir a ordem:
+Mudanças de comportamento devem seguir:
 
 ```text
 spec
   ↓
 DECISIONS.md
   ↓
-tasks.md
+tasks
   ↓
 testes
   ↓
 implementação
 ```
 
-Commits de implementação e testes referenciam a task correspondente, por exemplo:
+Os commits de teste e implementação referenciam suas respectivas tasks, por exemplo:
 
 ```text
-test(T-005): cobre obrigatoriedade de nota fiscal
-feat(T-005): implementa exigencia de nota fiscal
+test(T-020): cobre ausencia de cotacao utilizavel
+feat(T-020): trata ausencia de cotacao utilizavel
 ```
+
+A Política v4 continua a numeração das tasks da baseline em vez de substituir seu histórico.

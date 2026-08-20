@@ -165,3 +165,6 @@ def test_rn025_falha_cambial_nao_consome_limite():
 
     assert resultados[1]["valor_reembolsavel"] == Decimal("50.00")
     assert resultados[1]["status"] == "APROVADA"
+    assert resultados[0]["motivos"] == [
+    "COTACAO_NAO_DISPONIVEL"
+]

@@ -235,3 +235,32 @@ def test_rn023_representacao_compartilha_limite_diario():
     assert resultados[0]["valor_reembolsavel"] == Decimal("200.00")
     assert resultados[1]["valor_reembolsavel"] == Decimal("100.00")
     assert resultados[1]["status"] == "PARCIAL"
+
+def test_rn023_representacao_parcial_possui_motivo():
+    despesas = [
+        criar_despesa(
+            id="d-001",
+            categoria="representacao",
+            valor="350.00",
+        )
+    ]
+
+    politica = {
+        "representacao": Decimal("300.00"),
+    }
+
+    resultados = calcular_reembolsos(
+        despesas=despesas,
+        inicio=date(2026, 7, 1),
+        fim=date(2026, 7, 31),
+        politica=politica,
+    )
+
+    resultado = resultados[0]
+
+    assert resultado["valor_reembolsavel"] == Decimal("300.00")
+    assert resultado["status"] == "PARCIAL"
+    assert (
+        "LIMITE_DIARIO_REPRESENTACAO"
+        in resultado["motivos"]
+    )

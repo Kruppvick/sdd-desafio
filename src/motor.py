@@ -226,6 +226,11 @@ def calcular_reembolsos(
                     "LIMITE_DIARIO_TRANSPORTE"
                 )
 
+            elif categoria == "representacao":
+                resultado["motivos"].append(
+                    "LIMITE_DIARIO_REPRESENTACAO"
+                )
+
             elif categoria == "hospedagem":
                 resultado["motivos"].append(
                     "LIMITE_HOSPEDAGEM"

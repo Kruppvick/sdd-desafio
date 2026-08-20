@@ -23,6 +23,12 @@ DESCRICOES_MOTIVOS = {
     "VALOR_NAO_POSITIVO": (
         "Despesas com valor menor ou igual a zero não são reembolsáveis."
     ),
+    "COTACAO_NAO_DISPONIVEL": (
+    "Não existe cotação disponível para converter a despesa para BRL."
+    ),
+    "LIMITE_DIARIO_REPRESENTACAO": (
+    "O limite diário disponível para representação foi atingido."
+    ),
 }
 
 

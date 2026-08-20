@@ -47,3 +47,39 @@ def test_rn019_normaliza_resultado_para_centavos():
     )
 
     assert valor == Decimal("51.23")
+
+def test_rn020_usa_cotacao_anterior_mais_recente():
+    cotacoes = {
+        "USD": {
+            date(2026, 7, 9): Decimal("5.10"),
+            date(2026, 7, 11): Decimal("5.30"),
+        }
+    }
+
+    valor = converter_para_brl(
+        valor_original=Decimal("20.00"),
+        moeda="USD",
+        data=date(2026, 7, 10),
+        cotacoes=cotacoes,
+    )
+
+    assert valor == Decimal("102.00")
+
+
+def test_rn020_escolhe_a_mais_recente_entre_cotacoes_anteriores():
+    cotacoes = {
+        "USD": {
+            date(2026, 7, 7): Decimal("5.00"),
+            date(2026, 7, 8): Decimal("5.05"),
+            date(2026, 7, 9): Decimal("5.10"),
+        }
+    }
+
+    valor = converter_para_brl(
+        valor_original=Decimal("10.00"),
+        moeda="USD",
+        data=date(2026, 7, 10),
+        cotacoes=cotacoes,
+    )
+
+    assert valor == Decimal("51.00")

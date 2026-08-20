@@ -1,19 +1,31 @@
 # Tasks — Motor de Cálculo de Reembolso
 
-**Versão:** 1.0 · **Baseado na spec:** 1.0 · **Baseado no plan:** 1.0
+**Versão:** 2.0 · **Baseado na spec:** 2.0 · **Evolução da baseline:** Política v3 → Política v4
 
 > Cada task deve ser pequena o suficiente para virar um commit.
+>
 > Nenhuma task pode introduzir regra de negócio que não esteja definida na `spec.md`.
+>
+> As tasks T-001 a T-014 registram a implementação da baseline v3 já concluída.
+>
+> As tasks T-015 em diante representam o trabalho necessário para absorver a Política v4, conforme D-001 em `DECISIONS.md`.
+
+---
+
+# Baseline concluída — Política v3
 
 ## T-001 — Implementar interface CLI e leitura/escrita JSON
+
+**Status:** Concluída na baseline v3.
 
 **Descrição:**  
 Criar a interface de linha de comando com a operação `calcular`, recebendo `--input` e `--output`, lendo o JSON de entrada e gravando um JSON de saída.
 
-**Requisitos atendidos:**
+**Requisitos atendidos na baseline:**
 
-- contrato de interface da seção 9 da spec;
-- arquitetura de CLI e I/O definida no plan.
+- contrato de interface;
+- leitura e escrita JSON;
+- operação obrigatória `calcular`.
 
 **Critério de aceite:**
 
@@ -27,45 +39,51 @@ Criar a interface de linha de comando com a operação `calcular`, recebendo `--
 
 ## T-002 — Validar e normalizar a entrada
 
+**Status:** Concluída na baseline v3; comportamento ampliado pela T-015.
+
 **Descrição:**  
 Validar os campos obrigatórios da entrada e produzir as representações normalizadas utilizadas pelo motor.
 
-**Requisitos atendidos:**
+**Requisitos atendidos na baseline:**
 
 - RN-010;
 - RN-011;
-- contrato de entrada da seção 4 da spec.
+- contrato de entrada.
 
-**Critério de aceite:**
+**Critério de aceite da baseline:**
 
-- categorias são normalizadas conforme RN-010;
-- valores são normalizados conforme RN-011;
+- categorias são normalizadas;
+- valores são normalizados;
 - datas válidas são convertidas para comparação;
-- entradas estruturalmente inválidas são rejeitadas antes do motor;
+- entradas estruturalmente inválidas são rejeitadas;
 - testes de normalização e validação passam.
 
 ---
 
 ## T-003 — Implementar categorias reembolsáveis
 
-**Descrição:**  
-Aplicar a regra que permite somente as categorias previstas pela política.
+**Status:** Concluída na baseline v3; comportamento substituído pela política parametrizada nas T-016, T-017 e T-023.
 
-**Requisitos atendidos:**
+**Descrição:**  
+Aplicar as categorias contempladas pela política.
+
+**Requisitos atendidos na baseline:**
 
 - RN-009;
 - RN-010.
 
-**Critério de aceite:**
+**Critério de aceite da baseline:**
 
-- `alimentacao`, `transporte_urbano` e `hospedagem` são reconhecidas;
-- `ALIMENTACAO` é reconhecida após normalização;
-- `coworking` recebe reembolso zero e status `RECUSADA`;
+- categorias da baseline são reconhecidas;
+- categoria desconhecida recebe reembolso zero;
+- normalização da categoria é respeitada;
 - testes relacionados passam.
 
 ---
 
 ## T-004 — Implementar período de competência
+
+**Status:** Concluída e preservada na Política v4.
 
 **Descrição:**  
 Verificar se a data da despesa está dentro do período de competência.
@@ -86,85 +104,90 @@ Verificar se a data da despesa está dentro do período de competência.
 
 ## T-005 — Implementar exigência de nota fiscal
 
-**Descrição:**  
-Aplicar a obrigatoriedade de nota fiscal para despesas cujo valor normalizado seja superior a R$ 100,00.
+**Status:** Concluída na baseline v3; comportamento cambial ampliado pela T-022.
 
-**Requisitos atendidos:**
+**Descrição:**  
+Aplicar a obrigatoriedade de nota fiscal para despesas acima do limite documental.
+
+**Requisitos atendidos na baseline:**
 
 - RN-005;
 - RN-011.
 
-**Critério de aceite:**
+**Critério de aceite da baseline:**
 
 - R$ 99,99 sem nota não é recusado por RN-005;
 - R$ 100,00 sem nota não é recusado por RN-005;
 - R$ 100,01 sem nota é recusado;
 - R$ 100,01 com nota prossegue;
-- teste da interação entre normalização e limite documental passa.
+- testes relacionados passam.
 
 ---
 
 ## T-006 — Implementar limite diário de alimentação
 
-**Descrição:**  
-Aplicar o limite diário compartilhado de R$ 60,00 para despesas elegíveis de alimentação.
+**Status:** Concluída na baseline v3; limite fixo substituído por configuração externa na T-017.
 
-**Requisitos atendidos:**
+**Descrição:**  
+Aplicar limite diário compartilhado para despesas elegíveis de alimentação.
+
+**Requisitos relacionados:**
 
 - RN-001;
 - RN-004;
 - RN-013;
 - RN-014.
 
-**Critério de aceite:**
+**Critério de aceite da baseline:**
 
-- R$ 59,99 é integralmente reembolsável;
-- R$ 60,00 é integralmente reembolsável;
-- R$ 60,01 é parcialmente reembolsável;
-- R$ 40,00 seguido de R$ 30,00 resulta em R$ 40,00 e R$ 20,00;
-- o limite reinicia em nova data;
+- limite diário é compartilhado;
+- reembolso parcial é suportado;
+- limite reinicia em nova data;
+- ordem da entrada é respeitada;
 - testes relacionados passam.
 
 ---
 
 ## T-007 — Implementar limite diário de transporte urbano
 
-**Descrição:**  
-Aplicar o limite diário compartilhado de R$ 80,00 para despesas elegíveis de transporte urbano.
+**Status:** Concluída na baseline v3; limite fixo substituído por configuração externa na T-017.
 
-**Requisitos atendidos:**
+**Descrição:**  
+Aplicar limite diário compartilhado para despesas elegíveis de transporte urbano.
+
+**Requisitos relacionados:**
 
 - RN-002;
 - RN-004;
 - RN-013;
 - RN-014.
 
-**Critério de aceite:**
+**Critério de aceite da baseline:**
 
-- R$ 79,99 é integralmente reembolsável;
-- R$ 80,00 é integralmente reembolsável;
-- R$ 80,01 é parcialmente reembolsável;
-- R$ 50,00 seguido de R$ 50,00 resulta em R$ 50,00 e R$ 30,00;
-- o limite reinicia em nova data;
+- limite diário é compartilhado;
+- reembolso parcial é suportado;
+- limite reinicia em nova data;
+- ordem da entrada é respeitada;
 - testes relacionados passam.
 
 ---
 
 ## T-008 — Implementar limite de hospedagem
 
-**Descrição:**  
-Aplicar o limite de R$ 250,00 para cada lançamento elegível de hospedagem.
+**Status:** Concluída na baseline v3; limite fixo e limite zero são adaptados pela T-017.
 
-**Requisitos atendidos:**
+**Descrição:**  
+Aplicar o limite por lançamento elegível de hospedagem.
+
+**Requisitos relacionados:**
 
 - RN-003;
 - RN-004.
 
-**Critério de aceite:**
+**Critério de aceite da baseline:**
 
-- R$ 249,99 é integralmente reembolsável;
-- R$ 250,00 é integralmente reembolsável;
-- R$ 250,01 é parcialmente reembolsável;
+- hospedagem é limitada por lançamento;
+- reembolso parcial é suportado;
 - descrição contendo múltiplas diárias não altera o limite;
 - testes relacionados passam.
 
@@ -172,32 +195,35 @@ Aplicar o limite de R$ 250,00 para cada lançamento elegível de hospedagem.
 
 ## T-009 — Implementar tratamento de duplicatas
 
+**Status:** Concluída na baseline v3; identidade ampliada para múltiplas moedas na T-021.
+
 **Descrição:**  
 Detectar duplicatas segundo a identidade definida na spec e recusar ocorrências posteriores.
 
-**Requisitos atendidos:**
+**Requisitos relacionados:**
 
 - RN-008;
 - RN-010;
 - RN-011.
 
-**Critério de aceite:**
+**Critério de aceite da baseline:**
 
-- registros que diferem apenas pelo `id` são detectados como duplicados;
+- registros que diferem apenas pelo `id` podem ser duplicados;
 - primeira ocorrência é avaliada normalmente;
 - segunda ocorrência recebe reembolso zero;
-- diferenças em fornecedor, descrição ou valor normalizado impedem classificação como duplicata;
-- categoria normalizada participa da comparação;
+- diferenças nos campos da identidade impedem classificação como duplicata;
 - testes relacionados passam.
 
 ---
 
 ## T-010 — Implementar valores não positivos
 
-**Descrição:**  
-Tratar valores zero e negativos conforme a regra da baseline v3.
+**Status:** Concluída na baseline v3; preservada com valores considerados em BRL na v4.
 
-**Requisitos atendidos:**
+**Descrição:**  
+Tratar valores zero e negativos conforme a especificação.
+
+**Requisitos relacionados:**
 
 - RN-012;
 - RN-015.
@@ -208,42 +234,46 @@ Tratar valores zero e negativos conforme a regra da baseline v3.
 - valor negativo recebe status `RECUSADA`;
 - valores não positivos não consomem limites;
 - valores não positivos não participam dos totais solicitados;
-- valor original normalizado permanece disponível no resultado;
+- rastreabilidade do lançamento é preservada;
 - testes relacionados passam.
 
 ---
 
 ## T-011 — Implementar precedência e consumo de limites
 
-**Descrição:**  
-Garantir que despesas inelegíveis sejam recusadas antes da aplicação dos limites e que somente valores efetivamente reembolsados consumam limite.
+**Status:** Concluída na baseline v3; fluxo ampliado pela T-024.
 
-**Requisitos atendidos:**
+**Descrição:**  
+Garantir que despesas inelegíveis sejam recusadas antes do consumo dos limites e que somente valores efetivamente reembolsados consumam limite.
+
+**Requisitos relacionados:**
 
 - RN-013;
 - RN-014;
-- ordem definida na seção 8 da spec.
+- ordem definida na seção 8.
 
-**Critério de aceite:**
+**Critério de aceite da baseline:**
 
 - despesa sem nota não consome limite;
 - duplicata não consome limite novamente;
 - categoria não contemplada não consome limite;
 - despesa fora da competência não consome limite;
 - ordem original da entrada é preservada;
-- testes de integração de precedência passam.
+- testes de integração passam.
 
 ---
 
 ## T-012 — Implementar status, motivos e resumo
 
-**Descrição:**  
-Produzir as decisões individuais no schema definido e calcular o resumo final a partir dessas decisões.
+**Status:** Concluída na baseline v3; schema e rastreabilidade ampliados pelas T-025 e T-026.
 
-**Requisitos atendidos:**
+**Descrição:**  
+Produzir as decisões individuais e calcular o resumo final.
+
+**Requisitos relacionados:**
 
 - RN-015;
-- contrato de saída da seção 4 da spec.
+- contrato de saída.
 
 **Critério de aceite:**
 
@@ -256,120 +286,512 @@ Produzir as decisões individuais no schema definido e calcular o resumo final a
 
 ---
 
-## T-013 — Implementar teste ponta a ponta com o arquivo de exemplo
+## T-013 — Implementar teste ponta a ponta da baseline
+
+**Status:** Concluída na Política v3; novo cenário v4 coberto pela T-027.
 
 **Descrição:**  
-Executar o fluxo completo da CLI utilizando `exemplos/despesas-exemplo.json`.
-
-**Requisitos atendidos:**
-
-- interface obrigatória;
-- critérios de aceite da seção 9 da spec.
+Executar o fluxo completo da CLI utilizando o arquivo de exemplo da baseline.
 
 **Critério de aceite:**
 
-- a CLI processa o arquivo de exemplo sem erro;
-- o arquivo de saída é JSON válido;
+- CLI processa o exemplo sem erro;
+- saída é JSON válido;
 - existe uma decisão para cada despesa;
-- resumo é consistente com as decisões;
+- resumo é consistente;
 - teste ponta a ponta passa.
 
 ---
 
 ## T-014 — Documentar execução e testes no README
 
+**Status:** Concluída na baseline v3; documentação será atualizada pela T-028.
+
 **Descrição:**  
-Documentar como preparar o ambiente, executar o motor e rodar a suíte de testes.
+Documentar preparação do ambiente, execução do motor e suíte de testes.
+
+**Critério de aceite da baseline:**
+
+- README informa requisitos;
+- README mostra o comando da CLI;
+- README mostra como executar testes;
+- comandos documentados funcionam.
+
+---
+
+# Evolução — Política v4
+
+## T-015 — Adaptar validação e normalização para moeda
+
+**Descrição:**  
+Evoluir a preparação da entrada para aceitar o campo opcional `moeda`, aplicar `BRL` quando ausente e normalizar códigos monetários.
 
 **Requisitos atendidos:**
 
-- requisito de entrega do desafio.
+- RN-011;
+- RN-018;
+- contrato de entrada da seção 4.
 
 **Critério de aceite:**
 
-- README informa versão de Python necessária;
-- README informa instalação das dependências;
-- README mostra o comando da CLI;
-- README mostra como executar os testes;
-- os comandos documentados funcionam em um ambiente limpo.
+- despesa sem `moeda` resulta em `BRL`;
+- `usd`, `USD` e ` USD ` resultam em `USD`;
+- valor original continua sendo normalizado na moeda de origem;
+- moeda não é inferida de descrição ou fornecedor;
+- testes da T-015 passam.
 
-## Matriz de rastreabilidade
+---
 
-A tabela abaixo relaciona cada regra de negócio da `spec.md` às tasks responsáveis por implementá-la e aos testes que devem demonstrar seu atendimento.
+## T-016 — Implementar seleção da política por centro de custo
 
-| Regra | Task(s) | Teste(s) esperado(s) |
+**Descrição:**  
+Selecionar os limites e categorias aplicáveis utilizando `colaborador.centro_custo`.
+
+**Requisitos atendidos:**
+
+- RN-016;
+- RN-017.
+
+**Critério de aceite:**
+
+- centro com configuração específica utiliza sua própria política;
+- centro sem configuração específica utiliza `padrao`;
+- não ocorre correspondência parcial entre centros;
+- os limites da baseline não funcionam como fallback implícito;
+- testes da T-016 passam.
+
+---
+
+## T-017 — Tornar categorias e limites dependentes da política
+
+**Descrição:**  
+Substituir categorias globais e limites fixos pelos valores da política selecionada.
+
+**Requisitos atendidos:**
+
+- RN-001;
+- RN-002;
+- RN-003;
+- RN-004;
+- RN-009;
+- RN-017;
+- RN-022.
+
+**Critério de aceite:**
+
+- alimentação utiliza o limite configurado;
+- transporte utiliza o limite configurado;
+- hospedagem utiliza o limite configurado;
+- categoria ausente é recusada como não contemplada;
+- categoria presente com limite zero é reconhecida e recebe reembolso zero pelo limite;
+- alterar a política altera o cálculo sem alterar a regra no código;
+- testes da T-017 passam.
+
+---
+
+## T-018 — Implementar conversão cambial para BRL
+
+**Descrição:**  
+Converter despesas em moeda estrangeira para BRL utilizando as cotações fornecidas.
+
+**Requisitos atendidos:**
+
+- RN-011;
+- RN-019;
+- RN-024.
+
+**Critério de aceite:**
+
+- despesa em `BRL` não sofre conversão;
+- despesa estrangeira com cotação na mesma data utiliza essa cotação;
+- valor original normalizado é utilizado na conversão;
+- resultado convertido é normalizado para duas casas decimais;
+- valor convertido é utilizado pelas regras monetárias;
+- valor e moeda originais são preservados;
+- testes da T-018 passam.
+
+---
+
+## T-019 — Implementar fallback histórico de cotação
+
+**Descrição:**  
+Determinar a cotação aplicável quando não existir taxa exatamente na data da despesa.
+
+**Requisitos atendidos:**
+
+- RN-020.
+
+**Critério de aceite:**
+
+- cotação da mesma data possui prioridade;
+- na ausência dela, utiliza-se a cotação anterior mais recente;
+- entre várias anteriores, utiliza-se a mais recente;
+- cotação posterior nunca é utilizada;
+- despesa em fim de semana pode utilizar a última cotação anterior;
+- testes da T-019 passam.
+
+---
+
+## T-020 — Tratar moeda sem cotação utilizável
+
+**Descrição:**  
+Recusar despesas que necessitam de conversão mas não possuem cotação utilizável.
+
+**Requisitos atendidos:**
+
+- RN-021;
+- RN-025.
+
+**Critério de aceite:**
+
+- moeda sem cotação utilizável recebe reembolso zero;
+- status é `RECUSADA`;
+- motivo é `COTACAO_NAO_DISPONIVEL`;
+- cotação futura não é utilizada;
+- taxa igual a 1 não é utilizada como fallback;
+- taxa de outra moeda não é utilizada;
+- despesa não consome limite;
+- regras monetárias posteriores não são avaliadas;
+- testes da T-020 passam.
+
+---
+
+## T-021 — Adaptar duplicidade para múltiplas moedas
+
+**Descrição:**  
+Evoluir a identidade de duplicidade para considerar moeda e valor originais normalizados.
+
+**Requisitos atendidos:**
+
+- RN-008;
+- RN-011;
+- RN-018.
+
+**Critério de aceite:**
+
+- moeda original normalizada participa da identidade;
+- valor original normalizado participa da identidade;
+- valor convertido para BRL não participa;
+- 100 USD e 100 EUR não são duplicatas apenas pelo valor numérico;
+- despesas diferentes que convertam para o mesmo BRL não se tornam duplicatas;
+- primeira ocorrência continua sendo avaliada normalmente;
+- testes da T-021 passam.
+
+---
+
+## T-022 — Aplicar nota fiscal após conversão cambial
+
+**Descrição:**  
+Adaptar a regra documental para utilizar o valor convertido e normalizado em BRL.
+
+**Requisitos atendidos:**
+
+- RN-005;
+- RN-011;
+- RN-019;
+- RN-024.
+
+**Critério de aceite:**
+
+- R$ 100,00 em BRL não exige nota por RN-005;
+- R$ 100,01 em BRL exige nota;
+- despesa estrangeira convertida para R$ 100,00 não exige nota;
+- despesa estrangeira convertida para R$ 100,01 exige nota;
+- valor original estrangeiro não é comparado diretamente com R$ 100,00;
+- testes da T-022 passam.
+
+---
+
+## T-023 — Implementar categoria `representacao`
+
+**Descrição:**  
+Permitir a avaliação de `representacao` quando a categoria estiver presente na política aplicável.
+
+**Requisitos atendidos:**
+
+- RN-009;
+- RN-013;
+- RN-014;
+- RN-023.
+
+**Critério de aceite:**
+
+- `representacao` configurada é reconhecida;
+- `representacao` ausente é recusada como categoria não contemplada;
+- limite diário é compartilhado entre lançamentos da mesma data quando aplicável;
+- limite é consumido na ordem original;
+- despesas recusadas anteriormente não consomem o limite;
+- testes da T-023 passam.
+
+---
+
+## T-024 — Integrar precedência da Política v4
+
+**Descrição:**  
+Atualizar o fluxo do motor para respeitar a ordem de avaliação definida na seção 8 da spec 2.0.
+
+**Requisitos atendidos:**
+
+- RN-013;
+- RN-014;
+- RN-016;
+- RN-019;
+- RN-020;
+- RN-021;
+- RN-024;
+- RN-025.
+
+**Critério de aceite:**
+
+- política é selecionada antes da avaliação;
+- categoria, moeda e valor original são normalizados;
+- categoria e competência podem eliminar a despesa antes do câmbio;
+- duplicidade utiliza dados originais antes da conversão;
+- conversão ocorre antes da nota fiscal e dos limites;
+- falha cambial interrompe regras monetárias posteriores;
+- nota fiscal é avaliada antes do limite;
+- somente valor reembolsado consome limite;
+- ordem original é preservada;
+- testes de integração passam.
+
+---
+
+## T-025 — Evoluir schema de saída para 2.0
+
+**Descrição:**  
+Adaptar o resultado para preservar informações da moeda original e manter os valores financeiros do cálculo em BRL.
+
+**Requisitos atendidos:**
+
+- contrato de saída da seção 4;
+- RN-015;
+- RN-019.
+
+**Critério de aceite:**
+
+- `schema_version` é `"2.0"`;
+- cada despesa contém `valor_original`;
+- cada despesa contém `moeda_original`;
+- `valor_solicitado` representa o valor considerado em BRL;
+- `valor_reembolsavel` é expresso em BRL;
+- `valor_nao_reembolsavel` é expresso em BRL;
+- resumo é expresso em BRL;
+- valores estrangeiros originais permanecem auditáveis;
+- invariantes financeiras passam;
+- testes da T-025 passam.
+
+---
+
+## T-026 — Atualizar motivos da Política v4
+
+**Descrição:**  
+Adicionar os motivos necessários aos novos comportamentos sem perder os códigos existentes da baseline.
+
+**Requisitos atendidos:**
+
+- RN-021;
+- RN-022;
+- contrato de saída da seção 4.
+
+**Critério de aceite:**
+
+- `COTACAO_NAO_DISPONIVEL` possui descrição legível;
+- limite zero utiliza motivo de limite e não categoria ausente;
+- toda despesa `PARCIAL` possui motivo;
+- toda despesa `RECUSADA` possui motivo;
+- códigos da baseline permanecem estáveis quando o significado não mudou;
+- testes da T-026 passam.
+
+---
+
+## T-027 — Implementar testes ponta a ponta da Política v4
+
+**Descrição:**  
+Validar o fluxo completo utilizando os arquivos fornecidos no envelope da Política v4.
+
+**Requisitos atendidos:**
+
+- critérios de aceite da seção 9;
+- contrato de entrada e saída da seção 4;
+- RN-001 a RN-025 aplicáveis aos cenários do envelope.
+
+**Critério de aceite:**
+
+- despesas da v4 são processadas sem erro com dados auxiliares válidos;
+- política específica é aplicada;
+- política `padrao` possui cenário automatizado;
+- moedas estrangeiras são convertidas;
+- fallback de cotação anterior é coberto;
+- moeda sem cotação é recusada;
+- `representacao` é coberta;
+- limite zero é coberto;
+- existe uma decisão para cada despesa;
+- resumo fecha matematicamente em BRL;
+- teste ponta a ponta passa.
+
+---
+
+## T-028 — Atualizar documentação de execução para a Política v4
+
+**Descrição:**  
+Atualizar a documentação operacional para refletir política externa, câmbio, schema 2.0 e execução da nova versão.
+
+**Requisitos atendidos:**
+
+- requisito de entrega do desafio;
+- contrato da versão 2.0.
+
+**Critério de aceite:**
+
+- README explica os dados necessários à v4;
+- README documenta `moeda` opcional;
+- README informa que ausência de moeda significa BRL;
+- README explica que os resultados financeiros são expressos em BRL;
+- README informa `schema_version = "2.0"`;
+- comandos documentados funcionam;
+- suíte documentada passa.
+
+---
+
+# Matriz de rastreabilidade — Política v4
+
+A tabela abaixo relaciona cada regra da `spec.md` às tasks responsáveis pela baseline e/ou por sua evolução na Política v4.
+
+| Regra | Task(s) | Evidência de teste esperada |
 |---|---|---|
-| RN-001 — Limite diário de alimentação | T-006, T-011 | `test_rn001_limite_diario_alimentacao`, `test_rn001_limite_reinicia_em_nova_data` |
-| RN-002 — Limite diário de transporte urbano | T-007, T-011 | `test_rn002_limite_diario_transporte`, `test_rn002_limite_reinicia_em_nova_data` |
-| RN-003 — Limite de hospedagem | T-008 | `test_rn003_limite_hospedagem`, `test_rn003_nao_interpreta_diarias_da_descricao` |
-| RN-004 — Reembolso parcial acima do limite | T-006, T-007, T-008 | `test_rn004_reembolso_parcial_alimentacao`, `test_rn004_reembolso_parcial_transporte`, `test_rn004_reembolso_parcial_hospedagem` |
-| RN-005 — Obrigatoriedade de nota fiscal | T-005 | `test_rn005_99_99_sem_nota`, `test_rn005_100_sem_nota`, `test_rn005_100_01_sem_nota`, `test_rn005_100_01_com_nota` |
-| RN-006 — Limites ampliados em viagem | T-011 | `test_rn006_nao_infere_viagem_por_descricao`, `test_rn006_nao_infere_viagem_por_hospedagem` |
-| RN-007 — Período de competência | T-004, T-011 | `test_rn007_inicio_competencia_inclusivo`, `test_rn007_fim_competencia_inclusivo`, `test_rn007_data_anterior_recusada`, `test_rn007_data_posterior_recusada` |
-| RN-008 — Tratamento de duplicatas | T-009, T-011 | `test_rn008_detecta_duplicata_com_ids_diferentes`, `test_rn008_primeira_ocorrencia_e_mantida`, `test_rn008_diferenca_de_fornecedor_nao_e_duplicata` |
-| RN-009 — Categorias reembolsáveis | T-003 | `test_rn009_categorias_previstas_sao_reconhecidas`, `test_rn009_categoria_desconhecida_e_recusada` |
-| RN-010 — Normalização de categoria | T-002, T-003, T-009 | `test_rn010_normaliza_maiusculas`, `test_rn010_remove_espacos_externos`, `test_rn010_categoria_normalizada_participa_da_duplicidade` |
-| RN-011 — Normalização monetária | T-002, T-005, T-009 | `test_rn011_arredonda_33_333_para_33_33`, `test_rn011_arredonda_33_335_para_33_34`, `test_rn011_normalizacao_ocorre_antes_da_nota_fiscal` |
-| RN-012 — Valores não positivos | T-010, T-011 | `test_rn012_valor_zero_e_recusado`, `test_rn012_valor_negativo_e_recusado`, `test_rn012_valor_negativo_nao_afeta_limites` |
-| RN-013 — Consumo dos limites | T-006, T-007, T-011 | `test_rn013_sem_nota_nao_consome_limite`, `test_rn013_duplicata_nao_consome_limite`, `test_rn013_categoria_invalida_nao_consome_limite` |
-| RN-014 — Ordem de consumo do limite diário | T-006, T-007, T-011 | `test_rn014_respeita_ordem_da_entrada`, `test_rn014_ordem_inversa_altera_distribuicao` |
-| RN-015 — Consistência do resultado | T-010, T-012, T-013 | `test_rn015_resultado_individual_fecha`, `test_rn015_resumo_fecha_com_decisoes`, `test_rn015_valores_negativos_nao_reduzem_total_solicitado` |
+| RN-001 — Limite diário de alimentação | T-006, T-017, T-024 | limite obtido da política; compartilhamento diário; limite esgotado; ordem da entrada |
+| RN-002 — Limite diário de transporte urbano | T-007, T-017, T-024 | limite obtido da política; compartilhamento diário; reembolso parcial |
+| RN-003 — Limite de hospedagem | T-008, T-017 | limite externo; uma diária por lançamento; limite zero |
+| RN-004 — Reembolso parcial | T-006, T-007, T-008, T-017 | abaixo/no/acima do limite; limite totalmente consumido |
+| RN-005 — Nota fiscal | T-005, T-022, T-024 | R$ 100,00; R$ 100,01; conversão antes da verificação |
+| RN-006 — Viagem | T-011, T-024 | não inferir por descrição, hospedagem, aeroporto ou moeda estrangeira |
+| RN-007 — Competência | T-004, T-024 | início/fim inclusivos; antes/depois recusados |
+| RN-008 — Duplicatas | T-009, T-021, T-024 | moeda e valor originais; primeira ocorrência; BRL convertido fora da identidade |
+| RN-009 — Categorias reembolsáveis | T-003, T-016, T-017, T-023 | categoria depende da política; ausente versus limite zero; representação |
+| RN-010 — Normalização de categoria | T-002, T-003, T-021 | maiúsculas/minúsculas; espaços externos; uso na duplicidade |
+| RN-011 — Normalização monetária | T-002, T-015, T-018, T-021, T-022 | valor original; arredondamento; valor convertido normalizado |
+| RN-012 — Valores não positivos | T-010, T-024 | zero/negativo; sem impacto em limites/totais |
+| RN-013 — Consumo dos limites | T-006, T-007, T-011, T-023, T-024 | somente valor reembolsado consome; falha cambial não consome |
+| RN-014 — Ordem de consumo | T-006, T-007, T-011, T-023, T-024 | ordem original determina distribuição |
+| RN-015 — Consistência do resultado | T-010, T-012, T-025, T-027 | invariantes individuais e resumo em BRL |
+| RN-016 — Seleção da política | T-016, T-024 | política específica; fallback `padrao`; sem correspondência parcial |
+| RN-017 — Política externa | T-016, T-017 | alteração externa do limite altera resultado; sem constantes universais |
+| RN-018 — Moeda padrão e normalização | T-015, T-021 | ausência = BRL; normalização de código; uso na duplicidade |
+| RN-019 — Conversão para BRL | T-018, T-022, T-024, T-025 | conversão; normalização; uso em regras; preservação do original |
+| RN-020 — Cotação anterior | T-019, T-024 | mesma data; última anterior; nunca futura |
+| RN-021 — Cotação indisponível | T-020, T-024, T-026 | recusa; motivo; sem consumo de limite |
+| RN-022 — Limite zero | T-017, T-026 | categoria presente; reembolso zero; motivo de limite |
+| RN-023 — Representação | T-023, T-024 | presente/ausente; limite diário; ordem |
+| RN-024 — Ordem da conversão | T-018, T-022, T-024 | conversão antes de nota/limite; duplicidade antes da conversão |
+| RN-025 — Falha cambial e precedência | T-020, T-024 | falha encerra regras monetárias posteriores e não consome limite |
 
-## Cobertura das ambiguidades
+---
 
-As ambiguidades identificadas na spec também devem permanecer rastreáveis até as regras e tasks responsáveis pelo comportamento adotado.
+# Cobertura das ambiguidades
 
 | Ambiguidade | Regra(s) relacionada(s) | Task(s) |
 |---|---|---|
-| AMB-001 — Limite de alimentação por despesa ou por dia | RN-001 | T-006 |
-| AMB-002 — Limite de transporte por despesa ou por dia | RN-002 | T-007 |
-| AMB-003 — Quantidade de diárias | RN-003 | T-008 |
-| AMB-004 — Significado de reembolso parcial | RN-004 | T-006, T-007, T-008 |
-| AMB-005 — Exatamente R$ 100 exige nota | RN-005 | T-005 |
-| AMB-006 — Despesa acima de R$ 100 sem nota | RN-005 | T-005 |
-| AMB-007 — Nota antes ou depois do arredondamento | RN-005, RN-011 | T-002, T-005 |
-| AMB-008 — Como determinar viagem | RN-006 | T-011 |
+| AMB-001 — Limite de alimentação por despesa ou por dia | RN-001 | T-006, T-017 |
+| AMB-002 — Limite de transporte por despesa ou por dia | RN-002 | T-007, T-017 |
+| AMB-003 — Quantidade de diárias | RN-003 | T-008, T-017 |
+| AMB-004 — Significado de reembolso parcial | RN-004, RN-022 | T-017 |
+| AMB-005 — Exatamente R$ 100 exige nota | RN-005 | T-005, T-022 |
+| AMB-006 — Acima de R$ 100 sem nota | RN-005 | T-005, T-022 |
+| AMB-007 — Nota após normalização/conversão | RN-005, RN-011, RN-019, RN-024 | T-018, T-022 |
+| AMB-008 — Como determinar viagem | RN-006 | T-024 |
 | AMB-009 — Fronteiras da competência | RN-007 | T-004 |
 | AMB-010 — Qual data usar para competência | RN-007 | T-004 |
-| AMB-011 — O que caracteriza duplicata | RN-008, RN-010, RN-011 | T-002, T-009 |
-| AMB-012 — O que fazer com duplicata | RN-008 | T-009 |
-| AMB-013 — Categoria diferencia maiúsculas/minúsculas | RN-009, RN-010 | T-002, T-003 |
-| AMB-014 — Valores com mais de duas casas | RN-005, RN-008, RN-011 | T-002, T-005, T-009 |
-| AMB-015 — Valores zero ou negativos | RN-012, RN-015 | T-010, T-012 |
-| AMB-016 — Despesa recusada consome limite | RN-013 | T-011 |
-| AMB-017 — Distribuição do limite entre várias despesas | RN-001, RN-002, RN-014 | T-006, T-007, T-011 |
+| AMB-011 — O que caracteriza duplicata | RN-008, RN-010, RN-011, RN-018 | T-021 |
+| AMB-012 — O que fazer com duplicata | RN-008 | T-009, T-021 |
+| AMB-013 — Categoria e capitalização | RN-009, RN-010 | T-002, T-017 |
+| AMB-014 — Mais de duas casas decimais | RN-005, RN-008, RN-011, RN-019 | T-015, T-018, T-022 |
+| AMB-015 — Valores zero ou negativos | RN-012, RN-015 | T-010, T-025 |
+| AMB-016 — Despesa recusada consome limite | RN-013, RN-025 | T-024 |
+| AMB-017 — Distribuição do limite | RN-001, RN-002, RN-013, RN-014, RN-023 | T-017, T-023, T-024 |
+| AMB-018 — Centro sem política específica | RN-016, RN-017 | T-016 |
+| AMB-019 — Limites v3 versus política externa | RN-001, RN-002, RN-003, RN-017 | T-016, T-017 |
+| AMB-020 — Ausência de moeda | RN-018 | T-015 |
+| AMB-021 — Normalização da moeda | RN-018 | T-015 |
+| AMB-022 — Data sem cotação | RN-019, RN-020 | T-018, T-019 |
+| AMB-023 — Moeda sem cotação | RN-021, RN-025 | T-020 |
+| AMB-024 — Nota sobre original ou convertido | RN-005, RN-019, RN-024 | T-022 |
+| AMB-025 — Duplicidade original ou convertido | RN-008, RN-011, RN-018 | T-021 |
+| AMB-026 — Limite zero | RN-009, RN-022 | T-017, T-026 |
+| AMB-027 — Representação | RN-009, RN-023 | T-023 |
+| AMB-028 — Ordem da conversão | RN-008, RN-019, RN-024, RN-025 | T-024 |
+| AMB-029 — Moeda estrangeira indica viagem | RN-006, RN-018 | T-015, T-024 |
+| AMB-030 — Aprovação manual | Fora de escopo | Nenhuma task de implementação |
 
-## Ordem sugerida de execução
+---
 
-As tasks devem ser executadas na seguinte ordem:
+# Ordem sugerida de execução
+
+As tasks T-001 a T-014 já foram concluídas na baseline v3.
+
+A evolução para a Política v4 deve seguir:
 
 ```text
-T-001
-  ↓
-T-002
-  ↓
-T-003
-  ↓
-T-004
-  ↓
-T-005
-  ↓
-T-006
-  ↓
-T-007
-  ↓
-T-008
-  ↓
-T-009
-  ↓
-T-010
-  ↓
-T-011
-  ↓
-T-012
-  ↓
-T-013
-  ↓
-T-014
+T-015 — moeda e normalização
+   ↓
+T-016 — seleção da política
+   ↓
+T-017 — categorias e limites parametrizados
+   ↓
+T-018 — conversão cambial
+   ↓
+T-019 — fallback histórico de cotação
+   ↓
+T-020 — cotação indisponível
+   ↓
+T-021 — duplicidade em múltiplas moedas
+   ↓
+T-022 — nota fiscal após conversão
+   ↓
+T-023 — representação
+   ↓
+T-024 — precedência integrada v4
+   ↓
+T-025 — schema de saída 2.0
+   ↓
+T-026 — motivos v4
+   ↓
+T-027 — ponta a ponta v4
+   ↓
+T-028 — README v4
+```
 
+## Regra de execução
 
+Cada task da evolução deve seguir o ciclo:
+
+```text
+requisito já definido na spec
+    ↓
+teste automatizado
+    ↓
+falha esperada quando aplicável
+    ↓
+implementação mínima
+    ↓
+suíte completa
+    ↓
+revisão do diff
+    ↓
+commit referenciando a task
+```
+
+Nenhuma mudança de regra descoberta durante a implementação deve ser resolvida apenas no código ou no chat.
+
+Se surgir nova decisão de negócio:
+
+```text
+spec.md
+   ↓
+DECISIONS.md
+   ↓
+tasks.md
+   ↓
+teste
+   ↓
+implementação
+```

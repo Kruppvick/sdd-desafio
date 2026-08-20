@@ -29,6 +29,8 @@ def criar_despesa(
         "fornecedor": fornecedor,
         "valor_original": valor,
         "valor_normalizado": valor,
+        "moeda_original": "BRL",
+        "moeda_normalizada": "BRL",
         "tem_nota_fiscal": tem_nota_fiscal,
         "indice_entrada": 0,
     }

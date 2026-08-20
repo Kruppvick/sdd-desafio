@@ -57,6 +57,8 @@ def calcular_reembolsos(
         resultado = {
             "id": despesa["id"],
             "indice_entrada": despesa["indice_entrada"],
+            "valor_original": valor_original,
+            "moeda_original": moeda,
             "valor_solicitado": valor_original,
             "valor_reembolsavel": ZERO,
             "motivos": [],

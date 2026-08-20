@@ -61,6 +61,10 @@ def _serializar_resumo(resumo):
 def _serializar_despesa(resultado):
     return {
         "id": resultado["id"],
+        "valor_original": _formatar_decimal(
+            resultado["valor_original"]
+        ),
+        "moeda_original": resultado["moeda_original"],
         "valor_solicitado": _formatar_decimal(
             resultado["valor_solicitado"]
         ),
@@ -79,7 +83,6 @@ def _serializar_despesa(resultado):
             for motivo in resultado["motivos"]
         ],
     }
-
 
 def executar_calculo(
     caminho_entrada: str,
@@ -113,7 +116,7 @@ def executar_calculo(
     resumo = calcular_resumo(resultados)
 
     resultado = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "colaborador": {
             "id": dados["colaborador"]["id"],
         },

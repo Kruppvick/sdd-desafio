@@ -3,6 +3,12 @@ from decimal import Decimal
 
 from src.motor import calcular_reembolsos
 
+POLITICA_V3 = {
+    "alimentacao": Decimal("60.00"),
+    "transporte_urbano": Decimal("80.00"),
+    "hospedagem": Decimal("250.00"),
+}
+
 
 def criar_despesa(
     *,
@@ -47,6 +53,7 @@ def test_rn013_sem_nota_nao_consome_limite():
         despesas=despesas,
         inicio=date(2026, 7, 1),
         fim=date(2026, 7, 31),
+        politica=POLITICA_V3,
     )
 
     assert resultados[0]["valor_reembolsavel"] == Decimal("0.00")
@@ -77,6 +84,7 @@ def test_rn013_duplicata_nao_consome_limite_novamente():
         despesas=despesas,
         inicio=date(2026, 7, 1),
         fim=date(2026, 7, 31),
+        politica=POLITICA_V3,
     )
 
     assert resultados[0]["valor_reembolsavel"] == Decimal("40.00")
@@ -103,6 +111,7 @@ def test_rn001_limite_totalmente_consumido_gera_motivo():
         despesas=despesas,
         inicio=date(2026, 7, 1),
         fim=date(2026, 7, 31),
+        politica=POLITICA_V3,
     )
 
     assert resultados[0]["valor_reembolsavel"] == Decimal("60.00")
@@ -131,6 +140,7 @@ def test_rn014_ordem_original_define_consumo():
         despesas=despesas,
         inicio=date(2026, 7, 1),
         fim=date(2026, 7, 31),
+        politica=POLITICA_V3,
     )
 
     assert resultados[0]["valor_reembolsavel"] == Decimal("40.00")

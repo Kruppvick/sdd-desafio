@@ -2,12 +2,15 @@ import argparse
 import json
 from pathlib import Path
 
+from src.cambio_io import preparar_cotacoes
+from src.motivos import descricao_motivo
 from src.motor import calcular_reembolsos
 from src.normalizacao import normalizar_data
+from src.politica import selecionar_politica
+from src.politica_io import preparar_politica
 from src.preparacao import preparar_despesas
 from src.resultado import calcular_resumo
 from src.validacao import validar_entrada
-from src.motivos import descricao_motivo
 
 
 def criar_parser() -> argparse.ArgumentParser:
@@ -35,6 +38,16 @@ def criar_parser() -> argparse.ArgumentParser:
         "--output",
         required=True,
         help="Caminho do arquivo JSON de saída.",
+    )
+
+    calcular.add_argument(
+        "--politica",
+        help="Caminho do arquivo JSON da política de reembolso.",
+    )
+
+    calcular.add_argument(
+        "--cambio",
+        help="Caminho do arquivo JSON com as cotações de câmbio.",
     )
 
     return parser
@@ -84,9 +97,12 @@ def _serializar_despesa(resultado):
         ],
     }
 
+
 def executar_calculo(
     caminho_entrada: str,
     caminho_saida: str,
+    caminho_politica: str | None = None,
+    caminho_cambio: str | None = None,
 ) -> None:
     entrada = Path(caminho_entrada)
     saida = Path(caminho_saida)
@@ -98,6 +114,36 @@ def executar_calculo(
         dados = json.load(arquivo)
 
     validar_entrada(dados)
+
+    politica_selecionada = None
+    cotacoes = None
+
+    if caminho_politica is not None:
+        with Path(caminho_politica).open(
+            "r",
+            encoding="utf-8",
+        ) as arquivo:
+            dados_politica = json.load(arquivo)
+
+        politica_preparada = preparar_politica(
+            dados_politica
+        )
+
+        politica_selecionada = selecionar_politica(
+            politica=politica_preparada,
+            centro_custo=dados["colaborador"]["centro_custo"],
+        )
+
+    if caminho_cambio is not None:
+        with Path(caminho_cambio).open(
+            "r",
+            encoding="utf-8",
+        ) as arquivo:
+            dados_cambio = json.load(arquivo)
+
+        cotacoes = preparar_cotacoes(
+            dados_cambio
+        )
 
     despesas = preparar_despesas(
         dados["despesas"]
@@ -111,6 +157,8 @@ def executar_calculo(
         fim=normalizar_data(
             dados["periodo"]["fim"]
         ),
+        politica=politica_selecionada,
+        cotacoes=cotacoes,
     )
 
     resumo = calcular_resumo(resultados)
@@ -150,6 +198,8 @@ def main() -> int:
         executar_calculo(
             caminho_entrada=args.input,
             caminho_saida=args.output,
+            caminho_politica=args.politica,
+            caminho_cambio=args.cambio,
         )
         return 0
 

@@ -1,6 +1,5 @@
 from decimal import Decimal
 
-from src.categorias import categoria_reembolsavel
 from src.competencia import dentro_da_competencia
 from src.duplicidade import identidade_duplicidade
 from src.limites import aplicar_limite_diario, aplicar_limite_por_item
@@ -10,12 +9,11 @@ from src.resultado import completar_resultado
 
 ZERO = Decimal("0.00")
 
-LIMITES = {
+POLITICA_BASELINE = {
     "alimentacao": Decimal("60.00"),
     "transporte_urbano": Decimal("80.00"),
     "hospedagem": Decimal("250.00"),
 }
-
 
 def _finalizar(resultado: dict) -> dict:
     resultado_completo = completar_resultado(
@@ -33,7 +31,10 @@ def calcular_reembolsos(
     despesas,
     inicio,
     fim,
+    politica=None,
 ):
+    if politica is None:
+        politica = POLITICA_BASELINE
     resultados = []
     duplicidades_vistas = set()
     limites_consumidos = {}
@@ -62,7 +63,7 @@ def calcular_reembolsos(
             continue
 
         # RN-009 — categoria não contemplada
-        if not categoria_reembolsavel(categoria):
+        if categoria not in politica:
             resultado["motivos"].append(
                 "CATEGORIA_NAO_REEMBOLSAVEL"
             )
@@ -124,7 +125,7 @@ def calcular_reembolsos(
         if categoria == "hospedagem":
             reembolsavel = aplicar_limite_por_item(
                 valor=valor,
-                limite=LIMITES[categoria],
+                limite=politica[categoria],
             )
 
         # RN-001 / RN-002 / RN-014
@@ -141,7 +142,7 @@ def calcular_reembolsos(
 
             reembolsavel = aplicar_limite_diario(
                 valor=valor,
-                limite=LIMITES[categoria],
+                limite=politica[categoria],
                 consumido=consumido,
             )
 

@@ -16,8 +16,11 @@ def _buscar_cotacao(
     moeda: str,
     data,
     cotacoes: dict,
-) -> Decimal:
-    cotacoes_moeda = cotacoes[moeda]
+):
+    cotacoes_moeda = cotacoes.get(moeda)
+
+    if not cotacoes_moeda:
+        return None
 
     if data in cotacoes_moeda:
         return cotacoes_moeda[data]
@@ -28,10 +31,12 @@ def _buscar_cotacao(
         if data_cotacao < data
     ]
 
+    if not datas_anteriores:
+        return None
+
     data_aplicavel = max(datas_anteriores)
 
     return cotacoes_moeda[data_aplicavel]
-
 
 def converter_para_brl(
     *,
@@ -50,6 +55,8 @@ def converter_para_brl(
         data=data,
         cotacoes=cotacoes,
     )
+    if taxa is None:
+        return None
 
     valor_brl = valor_original * taxa
 

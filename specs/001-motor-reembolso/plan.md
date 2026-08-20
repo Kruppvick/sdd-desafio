@@ -1,6 +1,12 @@
 # Plano Técnico — Motor de Cálculo de Reembolso
 
-**Versão:** 1.0 · **Baseado na spec:** 1.0
+**Versão:** 2.0 · **Baseado na spec:** 2.0
+
+> Esta versão evolui o plano técnico da baseline v3 para suportar a Política v4.
+>
+> Decisões técnicas da baseline permanecem válidas quando não forem explicitamente
+> substituídas nesta versão. A mudança de comportamento está registrada em
+> `DECISIONS.md`.
 
 > Aqui mora o COMO. Este arquivo pode e deve falar de linguagem, biblioteca e
 > arquitetura. O que ele **não** pode é introduzir regra de negócio nova — se
@@ -23,185 +29,265 @@
 
 ## 2. Arquitetura
 
-A solução será dividida em blocos com responsabilidades bem separadas, mantendo o núcleo de regras de negócio independente da leitura e escrita de arquivos.
+A solução continua dividida em blocos com responsabilidades separadas, mantendo o núcleo de regras de negócio independente da leitura e escrita de arquivos.
+
+A Política v4 acrescenta duas novas entradas conceituais ao cálculo:
+
+- política de reembolso parametrizada;
+- cotações históricas de moedas.
+
+O fluxo passa a ser:
 
 ```text
-entrada JSON
-    ↓
-CLI
-    ↓
-leitura e validação da entrada
-    ↓
-normalização dos dados
-    ↓
-motor de cálculo de reembolso
-    ↓
+entrada principal JSON
+        +
+política v4
+        +
+cotações
+        ↓
+CLI / coordenação
+        ↓
+leitura e validação
+        ↓
+normalização
+        ↓
+seleção da política
+        ↓
+motor de cálculo
+        ↓
+conversão cambial quando necessária
+        ↓
+aplicação das regras
+        ↓
 montagem do resultado
-    ↓
-serialização da saída
-    ↓
+        ↓
+serialização
+        ↓
 arquivo JSON
 ```
 
 ### 2.1 CLI
 
-Responsável por receber a operação `calcular` e os argumentos:
+A CLI continua responsável pela operação `calcular` e pela coordenação da execução.
 
-- `--input`: caminho do arquivo JSON de entrada;
-- `--output`: caminho onde o resultado será gravado.
+A interface obrigatória permanece:
 
-A CLI não contém regras de negócio. Sua responsabilidade é coordenar a execução e transformar falhas de entrada ou processamento em uma resposta apropriada para quem executou o comando.
+```text
+calcular --input <entrada> --output <saida>
+```
 
-### 2.2 Leitura e validação da entrada
+A forma concreta de disponibilização dos dados auxiliares da Política v4 deve preservar essa interface obrigatória.
+
+A CLI não contém regras de negócio.
+
+### 2.2 Leitura e validação
 
 Responsável por:
 
-- abrir o arquivo informado em `--input`;
-- interpretar o conteúdo JSON;
-- verificar a presença e o formato dos dados necessários;
-- transformar os dados externos em estruturas utilizadas pelo núcleo da aplicação.
+- interpretar o JSON principal;
+- verificar os campos obrigatórios;
+- aceitar `moeda` como campo opcional;
+- validar os dados auxiliares de política;
+- validar os dados auxiliares de câmbio;
+- distinguir erro estrutural de dado auxiliar de uma recusa individual de despesa.
 
-Dados estruturalmente inválidos devem ser identificados antes da aplicação das regras de reembolso.
+Dados estruturalmente inválidos impedem o cálculo antes da execução do motor.
+
+Ausência legítima de cotação para uma despesa não é erro estrutural; é tratada pelo motor conforme RN-021.
 
 ### 2.3 Normalização
 
-Responsável por preparar os valores que serão utilizados pelo motor de cálculo.
+Responsável por:
 
-Inclui:
-
-- normalização monetária para duas casas decimais;
 - normalização da categoria;
-- conversão das datas para uma representação adequada para comparação.
+- normalização da moeda;
+- normalização do valor original;
+- conversão das datas;
+- preservação do índice original da despesa.
 
-A normalização ocorre antes da aplicação das regras que dependem desses valores.
+A normalização não realiza decisões de elegibilidade.
 
-### 2.4 Motor de cálculo de reembolso
-
-É o núcleo da aplicação.
-
-Responsável por avaliar as despesas na ordem original da entrada e aplicar as regras definidas na `spec.md`, incluindo:
-
-- elegibilidade da despesa;
-- competência;
-- duplicidade;
-- exigência de nota fiscal;
-- limites de cada categoria;
-- consumo dos limites diários;
-- cálculo do valor reembolsável;
-- definição do status;
-- geração dos motivos da decisão.
-
-O motor recebe dados já validados e normalizados e não é responsável por ler ou escrever arquivos.
-
-### 2.5 Controle dos limites
-
-Durante o processamento, o motor mantém o consumo dos limites que dependem de data e categoria.
-
-Para alimentação e transporte urbano, o consumo é identificado pela combinação:
+Para moedas:
 
 ```text
-data + categoria
+campo ausente -> BRL
+" usd "       -> USD
 ```
 
-Somente valores efetivamente reembolsados são adicionados ao consumo do limite.
+O valor original é normalizado antes de eventual conversão cambial.
 
-Hospedagem não compartilha um limite diário entre lançamentos na baseline v3; cada lançamento é tratado como uma diária conforme definido na spec.
+### 2.4 Seleção da política
 
-### 2.6 Montagem do resultado
+Antes da avaliação das despesas, o centro de custo do colaborador é utilizado para selecionar a configuração aplicável.
 
-Responsável por transformar as decisões individuais produzidas pelo motor no contrato de saída definido na spec.
+Fluxo:
 
-O resultado contém:
+```text
+centro_custo
+     ↓
+existe política específica?
+     ↓
+ sim ─────────→ política específica
+ não ─────────→ política padrao
+```
 
-- identificação do colaborador;
+A seleção é exata. Não há busca por prefixo ou similaridade.
+
+O resultado da seleção é uma configuração imutável durante aquele cálculo.
+
+### 2.5 Câmbio
+
+A responsabilidade cambial fica separada das regras de limite.
+
+Ela recebe conceitualmente:
+
+```text
+moeda
+data da despesa
+valor original normalizado
+cotações
+```
+
+e produz:
+
+```text
+valor em BRL
+```
+
+ou a indicação de que não existe cotação utilizável.
+
+Para moeda `BRL`, não há conversão.
+
+Para moeda estrangeira:
+
+1. procura cotação da mesma data;
+2. se ausente, procura a mais recente anterior;
+3. nunca utiliza cotação futura;
+4. multiplica o valor original normalizado pela taxa;
+5. normaliza o resultado para duas casas decimais.
+
+A busca da cotação e a conversão permanecem independentes das regras de nota fiscal e limite.
+
+### 2.6 Motor de cálculo de reembolso
+
+O motor continua sendo o núcleo da aplicação.
+
+Passa a receber:
+
+- despesas normalizadas;
+- período;
+- política já selecionada;
+- dados de câmbio preparados.
+
+Para cada despesa, aplica a precedência definida na seção 8 da spec.
+
+O motor coordena:
+
+- categoria;
 - competência;
-- resumo financeiro;
-- decisão individual de cada despesa;
-- valores solicitados, reembolsáveis e não reembolsáveis;
+- duplicidade;
+- conversão cambial;
+- valor não positivo;
+- nota fiscal;
+- limite da categoria;
+- consumo do limite;
+- valor reembolsável;
 - status;
 - motivos.
 
-Os totais do resumo são calculados a partir das decisões individuais, evitando a existência de duas fontes diferentes para o mesmo valor.
+Não lê arquivos e não conhece caminhos da CLI.
 
-### 2.7 Serialização da saída
+### 2.7 Controle dos limites
 
-Responsável por:
+Os limites deixam de ser constantes globais do código.
 
-- transformar o resultado interno no schema JSON definido pela spec;
-- representar valores monetários no formato de saída definido;
-- gravar o conteúdo no caminho informado em `--output`.
+O motor consulta a política selecionada.
 
-Essa camada não realiza cálculos de política.
+Para categorias com limite diário, o consumo continua identificado por:
+
+```text
+(data, categoria)
+```
+
+Somente valores efetivamente reembolsados aumentam o consumo.
+
+Hospedagem continua sendo aplicada por lançamento/diária conforme a spec.
+
+`representacao`, quando configurada como limite diário, utiliza o mesmo mecanismo de consumo por data e categoria.
+
+Uma categoria presente com limite zero continua existindo na política; apenas não possui valor disponível.
+
+### 2.8 Montagem do resultado
+
+A montagem do resultado passa a preservar:
+
+- `valor_original`;
+- `moeda_original`;
+- `valor_solicitado` em BRL;
+- `valor_reembolsavel` em BRL;
+- `valor_nao_reembolsavel` em BRL;
+- status;
+- motivos.
+
+O resumo continua derivado exclusivamente das decisões individuais.
+
+Todos os totais são expressos em BRL.
+
+### 2.9 Serialização
+
+A serialização produz o schema `"2.0"` definido na spec.
+
+Valores monetários continuam sendo representados como texto decimal com duas casas.
+
+Essa camada não executa conversão nem regras de política.
 
 ### Fronteiras
 
-A principal fronteira arquitetural separa:
+A separação arquitetural passa a ser:
 
 ```text
-I/O e interface
+I/O / CLI
+    ↓
+validação e preparação
+    ↓
+política + câmbio
+    ↓
+motor de domínio
+    ↓
+resultado
+    ↓
+serialização
 ```
 
-de:
+Política e câmbio são dados do cálculo, não regras codificadas na CLI.
 
-```text
-regras de negócio
-```
-
-A CLI, leitura de arquivos e escrita do resultado ficam fora do núcleo de cálculo.
-
-O motor de reembolso não conhece caminhos de arquivos, argumentos da CLI ou detalhes de serialização JSON.
-
-Essa separação permite testar as regras de negócio diretamente, sem necessidade de criar arquivos ou executar a CLI em cada teste.
-
-Os testes ponta a ponta exercitam a integração completa:
-
-```text
-arquivo de entrada
-    ↓
-CLI
-    ↓
-motor
-    ↓
-arquivo de saída
-```
-
-enquanto a maior parte dos testes das regras pode atuar diretamente sobre o núcleo de cálculo.
-
----
+O motor continua testável diretamente em memória.
 
 ## 3. Modelo de dados
 
-O modelo interno deve representar separadamente os dados recebidos, os dados normalizados e o resultado da avaliação de cada despesa.
-
-O objetivo é impedir que detalhes do JSON de entrada se misturem diretamente com as regras de negócio.
+O modelo interno representa separadamente dados originais, dados normalizados, política aplicável, câmbio e resultado.
 
 ### 3.1 Colaborador
 
-Representa o colaborador associado ao conjunto de despesas.
-
 Campos:
 
-- `id`: identificador do colaborador;
-- `nome`: nome do colaborador;
-- `centro_custo`: centro de custo informado na entrada.
+- `id`;
+- `nome`;
+- `centro_custo`.
 
-Na baseline v3, o centro de custo é preservado para rastreabilidade, mas não altera os limites aplicados.
+Na v4, `centro_custo` participa da seleção da política.
 
 ### 3.2 Período
 
-Representa o período de competência utilizado para avaliação das despesas.
-
 Campos:
 
-- `competencia`: competência informada no formato `AAAA-MM`;
-- `inicio`: data inicial da competência;
-- `fim`: data final da competência.
+- `competencia`;
+- `inicio`;
+- `fim`.
 
-As datas são convertidas para uma representação que permita comparação cronológica.
+As datas utilizam representação própria para comparação cronológica.
 
 ### 3.3 Despesa de entrada
-
-Representa os dados recebidos para cada lançamento antes das normalizações.
 
 Campos:
 
@@ -211,15 +297,14 @@ Campos:
 - `descricao`;
 - `fornecedor`;
 - `valor`;
+- `moeda`, opcional;
 - `tem_nota_fiscal`.
 
-Essa representação preserva os dados originais recebidos e serve como origem para a normalização.
+Essa representação preserva exatamente os dados recebidos.
 
 ### 3.4 Despesa normalizada
 
-Representa os valores efetivamente utilizados pelo motor de cálculo.
-
-Campos:
+Campos conceituais:
 
 - `id`;
 - `data`;
@@ -228,105 +313,125 @@ Campos:
 - `descricao`;
 - `fornecedor`;
 - `valor_original`;
-- `valor_normalizado`;
+- `valor_original_normalizado`;
+- `moeda_original`;
+- `moeda_normalizada`;
 - `tem_nota_fiscal`;
 - `indice_entrada`.
 
-`indice_entrada` preserva a posição original da despesa e permite aplicar de forma determinística as regras que dependem da ordem dos lançamentos.
+Após conversão bem-sucedida, a avaliação também possui:
 
-`categoria_original` e `valor_original` são preservados para rastreabilidade.
+- `valor_brl`.
 
-`categoria_normalizada` e `valor_normalizado` são utilizados pelas regras de negócio.
+`valor_brl` não substitui `valor_original_normalizado`.
 
-### 3.5 Motivo
+### 3.5 Política
 
-Representa uma justificativa associada à decisão sobre uma despesa.
+Representa os dados externos da política.
+
+Conceitualmente contém:
+
+- configuração `padrao`;
+- configurações por centro de custo;
+- categorias;
+- limites;
+- parâmetros gerais.
+
+O núcleo recebe a política já validada.
+
+### 3.6 Política aplicável
+
+Representa a configuração selecionada para um cálculo após RN-016.
+
+Ela fornece ao motor:
+
+```text
+categoria -> configuração de limite
+```
+
+O motor não precisa saber se aquela configuração veio da política específica ou da política padrão depois da seleção.
+
+### 3.7 Cotação
+
+Representa uma taxa de conversão para BRL associada a:
+
+```text
+moeda + data -> taxa
+```
+
+As taxas são mantidas com sua precisão original em `Decimal`.
+
+O arredondamento ocorre sobre o valor convertido, não sobre a taxa.
+
+### 3.8 Motivo
 
 Campos:
 
-- `codigo`: identificador estável do motivo;
-- `descricao`: explicação legível para quem consultar o resultado.
+- `codigo`;
+- `descricao`.
 
-Exemplos de códigos:
+Além dos códigos da baseline, a v4 acrescenta:
 
-- `LIMITE_DIARIO_ALIMENTACAO`;
-- `LIMITE_DIARIO_TRANSPORTE`;
-- `LIMITE_HOSPEDAGEM`;
-- `NOTA_FISCAL_OBRIGATORIA`;
-- `FORA_COMPETENCIA`;
-- `DUPLICATA`;
-- `CATEGORIA_NAO_REEMBOLSAVEL`;
-- `VALOR_NAO_POSITIVO`.
+```text
+COTACAO_NAO_DISPONIVEL
+```
 
-Os códigos são utilizados nos testes e na rastreabilidade do comportamento. As descrições são destinadas à leitura humana.
+Os códigos permanecem estáveis para testes e consumidores.
 
-### 3.6 Resultado individual da despesa
-
-Representa a decisão final sobre um lançamento.
+### 3.9 Resultado individual
 
 Campos:
 
 - `id`;
 - `indice_entrada`;
+- `valor_original`;
+- `moeda_original`;
 - `valor_solicitado`;
 - `valor_reembolsavel`;
 - `valor_nao_reembolsavel`;
 - `status`;
 - `motivos`.
 
-Os possíveis valores de `status` são:
+Os três últimos valores financeiros são expressos em BRL conforme o contrato da spec.
 
-- `APROVADA`;
-- `PARCIAL`;
-- `RECUSADA`.
+### 3.10 Controle de limite diário
 
-O valor solicitado corresponde ao valor já normalizado conforme a regra de normalização monetária.
-
-### 3.7 Controle de limite diário
-
-Representa quanto de um limite compartilhado já foi consumido durante o processamento.
-
-A chave conceitual é formada por:
+A chave continua:
 
 ```text
 (data, categoria)
 ```
 
-O valor associado à chave representa o total já reembolsado naquela categoria e data.
+e o valor representa quanto já foi efetivamente reembolsado em BRL.
 
-Exemplo conceitual:
+Exemplo:
 
 ```text
-(2026-07-03, alimentacao) -> 60.00
-(2026-07-06, transporte_urbano) -> 80.00
+(2026-07-03, alimentacao) -> 90.00
+(2026-07-03, representacao) -> 300.00
 ```
 
-Esse controle é atualizado apenas com valores efetivamente reembolsados.
+### 3.11 Controle de duplicidade
 
-### 3.8 Controle de duplicidade
-
-Durante a avaliação das despesas, é mantido o conjunto de identidades de lançamentos já observados.
-
-A identidade utilizada na baseline v3 é composta por:
+A identidade passa a ser:
 
 ```text
 (
-  data,
-  categoria_normalizada,
-  descricao,
-  fornecedor,
-  valor_normalizado,
-  tem_nota_fiscal
+    data,
+    categoria_normalizada,
+    descricao,
+    fornecedor,
+    moeda_normalizada,
+    valor_original_normalizado,
+    tem_nota_fiscal
 )
 ```
 
-O campo `id` não faz parte dessa identidade.
+O `id` não participa.
 
-Se uma identidade já tiver sido observada anteriormente, a nova ocorrência é considerada duplicada.
+O valor convertido para BRL também não participa.
 
-### 3.9 Resumo
-
-Representa os totais consolidados após a avaliação de todas as despesas.
+### 3.12 Resumo
 
 Campos:
 
@@ -334,113 +439,149 @@ Campos:
 - `total_reembolsavel`;
 - `total_nao_reembolsavel`.
 
-Os totais são derivados dos resultados individuais e não são calculados por um fluxo separado.
+Todos são expressos em BRL e derivados dos resultados individuais.
 
-### 3.10 Resultado do cálculo
-
-Representa o resultado completo produzido pelo motor.
+### 3.13 Resultado do cálculo
 
 Contém:
 
-- identificação do colaborador;
-- período processado;
+- colaborador;
+- período;
 - resumo;
-- lista de resultados individuais das despesas.
-
-O resultado interno é posteriormente convertido para o schema JSON definido na `spec.md`.
+- resultados individuais.
 
 ### Fluxo dos dados
 
 ```text
-JSON de entrada
-      ↓
-dados de entrada
-      ↓
+entrada
+  ↓
 validação
-      ↓
+  ↓
+normalização
+  ↓
+seleção da política
+  ↓
 despesas normalizadas
-      ↓
-motor de regras
-      ↓
+  ↓
+motor
+  ├── duplicidade
+  ├── câmbio
+  ├── nota fiscal
+  └── limites
+  ↓
 resultados individuais
-      ↓
+  ↓
 resumo
-      ↓
-resultado completo
-      ↓
-JSON de saída
+  ↓
+schema 2.0
 ```
-
-A separação entre dados originais, valores normalizados e resultados evita que uma regra altere silenciosamente a informação recebida e facilita a auditoria do cálculo.
-
----
 
 ## 4. Como a política é representada
 
-Na baseline v3, a política de reembolso é representada por uma estrutura central de configuração do domínio.
+Na Política v4, a política de reembolso deixa de ser uma estrutura fixa embutida no sistema e passa a ser um dado externo fornecido ao cálculo.
 
-Essa estrutura concentra:
+A aplicação mantém uma representação interna validada da política recebida.
 
-- categorias reembolsáveis;
-- limites monetários;
-- periodicidade dos limites;
-- valor a partir do qual a nota fiscal é obrigatória;
-- percentual de acréscimo previsto para viagem.
-
-Exemplo conceitual:
+Conceitualmente:
 
 ```text
-alimentacao:
-  limite: 60.00
-  periodicidade: dia
-
-transporte_urbano:
-  limite: 80.00
-  periodicidade: dia
-
-hospedagem:
-  limite: 250.00
-  periodicidade: diaria
-
-nota_fiscal_obrigatoria_acima_de:
-  100.00
-
-acrescimo_em_viagem_percentual:
-  50
+politica
+├── padrao
+│   └── categorias / limites
+└── centros_custo
+    ├── CC-A
+    │   └── categorias / limites
+    └── CC-B
+        └── categorias / limites
 ```
 
-### Decisão
+A estrutura concreta deve refletir o formato recebido no envelope, sem criar parâmetros de negócio inexistentes na fonte.
 
-Os valores da política ficam centralizados em uma única estrutura conhecida pelo motor de cálculo.
+### Seleção
 
-O motor consulta essa estrutura para obter limites e parâmetros, em vez de repetir valores monetários em diferentes partes das regras.
+A seleção ocorre uma vez por cálculo:
 
-### Alternativa descartada — valores espalhados pelo código
+```text
+colaborador.centro_custo
+          ↓
+configuração específica existe?
+       ↙              ↘
+     sim               não
+      ↓                 ↓
+específica            padrao
+```
 
-Foi descartada a opção de escrever diretamente valores como `60.00`, `80.00` e `250.00` dentro de cada trecho responsável por aplicar uma regra.
+Depois da seleção, o motor trabalha apenas com a política aplicável.
 
-**Motivo:** isso criaria múltiplas fontes de verdade e aumentaria o risco de inconsistência quando algum limite precisasse ser alterado.
+### Limites
 
-### Alternativa descartada — arquivo externo na baseline v3
+O motor não mantém:
 
-Também foi descartada, para a baseline inicial, a leitura da política a partir de um arquivo externo.
+```text
+alimentacao = 60.00
+transporte_urbano = 80.00
+hospedagem = 250.00
+```
 
-**Motivo:** a Política v3 é fixa para todos os colaboradores e o requisito inicial não exige alteração dinâmica desses valores durante a execução. Introduzir uma fonte externa neste momento aumentaria a complexidade sem atender a uma necessidade existente na baseline.
+como constantes universais.
+
+Os valores são obtidos da política selecionada.
+
+### Categorias
+
+A existência de uma categoria também é determinada pela política.
+
+Portanto:
+
+```text
+categoria ausente
+```
+
+é diferente de:
+
+```text
+categoria presente com limite 0.00
+```
+
+### Decisão substituída da baseline
+
+Na baseline v3, a leitura de política externa foi deliberadamente descartada porque existia apenas uma política fixa.
+
+A Política v4 invalida essa premissa.
+
+A nova decisão é carregar e validar a política externa antes da execução do motor.
+
+Essa mudança corresponde à D-001 em `DECISIONS.md`.
+
+### Alternativa descartada — manter defaults da v3 no código
+
+Não serão mantidos R$ 60,00, R$ 80,00 e R$ 250,00 como fallback silencioso.
+
+**Motivo:** isso criaria uma segunda fonte de verdade e poderia mascarar política v4 ausente ou inválida.
+
+### Alternativa descartada — motor consultar diretamente o JSON bruto
+
+O motor não acessa diretamente a estrutura JSON original da política.
+
+**Motivo:** isso acoplaria regras de negócio ao formato externo e espalharia parsing e validação pelo núcleo.
 
 ### Consequência
 
-A centralização torna simples:
+A arquitetura passa a separar:
 
-- localizar os parâmetros da política;
-- alterar um limite sem procurar o mesmo valor em vários pontos;
-- testar o motor com diferentes valores de configuração;
-- evitar números monetários duplicados nas regras.
+```text
+formato externo da política
+          ↓
+validação / preparação
+          ↓
+representação interna
+          ↓
+seleção
+          ↓
+motor
+```
 
-Por outro lado, a baseline v3 ainda pressupõe que a política conhecida pela aplicação é única e está definida junto com o sistema.
-
-Caso surja um requisito para carregar políticas diferentes dinamicamente, essa decisão deverá ser revisitada no `plan.md` e registrada como impacto arquitetural da mudança.
-
----
+Isso permite testar o motor com diferentes políticas em memória sem alterar código de regra.
 
 ## 5. Decisões técnicas
 
@@ -617,15 +758,111 @@ descricao: Despesas acima de R$ 100,00 exigem nota fiscal.
 
 ### DT-011 — Não implementar um motor genérico de regras
 
-**Contexto:** A baseline v3 possui um conjunto pequeno e conhecido de regras de reembolso.
+**Contexto:** A Política v4 torna limites e categorias parametrizáveis, mas a sequência e a semântica das regras continuam explicitamente definidas na spec.
 
-**Decisão:** Implementar explicitamente o fluxo de avaliação da política, mantendo funções e responsabilidades pequenas, sem criar uma infraestrutura genérica de rule engine.
+**Decisão:** Manter um fluxo explícito de avaliação, sem criar rule engine genérico, DSL, sistema de plugins ou execução arbitrária de regras configuradas.
 
-**Alternativa descartada:** Criar registro dinâmico de regras, plugins, DSL de política ou pipeline genérico configurável.
+A política externa fornece dados de configuração, não código nem novas regras executáveis.
 
-**Motivo da rejeição:** Essas abstrações aumentariam a complexidade sem atender a um requisito existente na baseline.
+**Alternativa descartada:** Transformar cada regra em plugin ou expressão dinâmica carregada da política.
 
-**Consequência:** A implementação inicial permanece simples e fácil de auditar. Caso uma mudança futura exija políticas altamente dinâmicas, essa decisão deverá ser reavaliada.
+**Motivo da rejeição:** A v4 exige parametrização de dados, não uma linguagem dinâmica de regras. Um rule engine aumentaria a complexidade sem requisito correspondente.
+
+**Consequência:** Limites e categorias podem variar por política, enquanto a ordem e a semântica de RN-001 a RN-025 permanecem explícitas e auditáveis.
+
+---
+
+### DT-012 — Política externa validada antes do motor
+
+**Contexto:** A v4 depende de uma política externa para selecionar categorias e limites.
+
+**Decisão:** Converter o documento externo em uma representação interna validada antes de iniciar o cálculo.
+
+**Alternativa descartada:** Consultar o JSON bruto dentro de cada regra.
+
+**Motivo da rejeição:** Misturaria parsing, validação e domínio.
+
+**Consequência:** O motor trabalha com uma estrutura previsível e testes podem fornecer políticas diretamente em memória.
+
+---
+
+### DT-013 — Serviço de conversão cambial isolado
+
+**Contexto:** Conversão de moeda possui busca temporal de cotação, multiplicação decimal e possibilidade de ausência de taxa.
+
+**Decisão:** Isolar seleção de cotação e conversão em responsabilidade própria, independente dos limites e da nota fiscal.
+
+**Alternativa descartada:** Implementar conversão diretamente dentro do fluxo de cada categoria.
+
+**Motivo da rejeição:** Duplicaria comportamento e aumentaria risco de categorias utilizarem regras cambiais diferentes.
+
+**Consequência:** Toda despesa estrangeira utiliza o mesmo mecanismo determinístico de conversão.
+
+---
+
+### DT-014 — Índice de cotações por moeda e data
+
+**Contexto:** Para encontrar a cotação da mesma data ou a mais recente anterior, o sistema precisa consultar histórico por moeda.
+
+**Decisão:** Preparar as cotações em uma estrutura agrupada por moeda e ordenada cronologicamente, permitindo selecionar a taxa aplicável sem misturar essa busca ao motor.
+
+Conceitualmente:
+
+```text
+USD -> [
+    (data_1, taxa_1),
+    (data_2, taxa_2),
+    ...
+]
+```
+
+**Alternativa descartada:** Percorrer todo o documento bruto de câmbio para cada despesa.
+
+**Motivo da rejeição:** Mistura parsing com regra temporal e repete trabalho desnecessariamente.
+
+**Consequência:** A regra de fallback histórico fica concentrada e testável isoladamente.
+
+---
+
+### DT-015 — Preservar valor original e valor em BRL separadamente
+
+**Contexto:** A v4 exige conversão sem perder rastreabilidade da informação recebida.
+
+**Decisão:** Manter campos internos distintos para valor original normalizado e valor convertido em BRL.
+
+**Alternativa descartada:** Sobrescrever o valor original após conversão.
+
+**Motivo da rejeição:** Isso impediria auditar a conversão e quebraria a identidade de duplicidade definida na spec.
+
+**Consequência:** O modelo possui mais campos, mas preserva claramente origem e resultado da transformação.
+
+---
+
+### DT-016 — Câmbio ausente como resultado de domínio, não exceção estrutural
+
+**Contexto:** Uma moeda pode estar corretamente informada e ainda não possuir cotação utilizável.
+
+**Decisão:** Diferenciar:
+
+```text
+dados de câmbio inválidos
+```
+
+de:
+
+```text
+cotação válida estruturalmente, porém inexistente para a despesa
+```
+
+O primeiro caso interrompe o cálculo como erro de entrada/configuração.
+
+O segundo é devolvido ao motor como ausência de cotação e produz `COTACAO_NAO_DISPONIVEL`.
+
+**Alternativa descartada:** Tratar ambos como a mesma exceção.
+
+**Motivo da rejeição:** Confundiria falha estrutural com uma decisão de negócio prevista pela spec.
+
+**Consequência:** Testes e mensagens de erro podem distinguir claramente os dois cenários.
 
 ---
 
@@ -641,6 +878,7 @@ A suíte será dividida em três níveis:
 
 ### 6.1 Testes unitários
 
+Na Política v4, também devem ser cobertos:
 A maior parte da suíte será composta por testes unitários.
 
 Eles exercitam diretamente o núcleo de cálculo, sem leitura ou escrita de arquivos.
@@ -660,7 +898,19 @@ Devem cobrir:
 - consumo de limites;
 - ordem dos lançamentos;
 - cálculo dos totais;
-- geração de status e motivos.
+- geração de status e motivos;
+- normalização de moeda;
+- seleção da política por centro de custo;
+- fallback para política `padrao`;
+- categorias e limites parametrizados;
+- conversão para BRL;
+- busca da cotação da mesma data;
+- busca da última cotação anterior;
+- ausência de cotação utilizável;
+- duplicidade com moeda e valor originais;
+- limite zero;
+- categoria `representacao`;
+- preservação de valor e moeda originais.
 
 Os testes unitários devem utilizar entradas pequenas, contendo somente os dados necessários para demonstrar o comportamento da regra testada.
 
@@ -677,12 +927,23 @@ Casos importantes incluem:
 - normalização monetária antes da verificação da obrigatoriedade de nota fiscal;
 - normalização da categoria antes da verificação de duplicidade;
 - valores não positivos junto de despesas positivas;
-- fechamento dos totais do resumo.
+- fechamento dos totais do resumo;
+- conversão antes da nota fiscal;
+- falha cambial antes das regras monetárias posteriores;
+- política específica produzindo limites diferentes da política padrão;
+- despesa recusada por câmbio sem consumir limite;
+- duplicidade detectada antes da conversão;
+- `representacao` concorrendo por limite diário;
+- categoria presente com limite zero;
+- resumo combinando BRL e despesas estrangeiras convertidas.
 
 O objetivo é verificar não apenas cada regra isoladamente, mas também a precedência definida na seção 8 da spec.
 
 ### 6.3 Testes ponta a ponta
 
+Além do exemplo da baseline, deve existir teste ponta a ponta com os dados fornecidos no envelope da Política v4.
+
+Esse teste deve exercitar política externa, câmbio e schema de saída `"2.0"`.
 Os testes ponta a ponta exercitam a interface completa exigida pelo desafio:
 
 ```text
@@ -741,18 +1002,25 @@ Todos os casos definidos na seção 7 da `spec.md` devem possuir cobertura autom
 
 Os casos de fronteira devem receber atenção especial, incluindo:
 
-- R$ 59,99, R$ 60,00 e R$ 60,01 para alimentação;
-- R$ 79,99, R$ 80,00 e R$ 80,01 para transporte urbano;
-- R$ 249,99, R$ 250,00 e R$ 250,01 para hospedagem;
+- um centavo abaixo, exatamente no limite e um centavo acima do limite configurado para cada categoria relevante;
 - R$ 99,99, R$ 100,00 e R$ 100,01 para nota fiscal;
+- conversão que resulte exatamente em R$ 100,00 e R$ 100,01;
 - primeiro e último dia da competência;
 - dia anterior e posterior à competência;
-- valores com mais de duas casas decimais;
-- valor igual a zero;
-- valor negativo;
-- duplicatas e não duplicatas semelhantes;
-- categoria em caixa diferente;
-- múltiplas despesas concorrendo pelo mesmo limite.
+- valor original com mais de duas casas;
+- valor convertido com mais de duas casas;
+- valor zero e negativo;
+- moeda ausente;
+- moeda com diferenças de capitalização;
+- cotação na mesma data;
+- cotação somente em data anterior;
+- cotação somente em data futura;
+- moeda sem cotação;
+- limite zero;
+- categoria `representacao`;
+- duplicatas em mesma moeda;
+- despesas semelhantes em moedas diferentes;
+- múltiplas despesas concorrendo pelo mesmo limite parametrizado.
 
 ### 6.6 Testes parametrizados
 
@@ -876,7 +1144,7 @@ Os riscos abaixo representam situações que podem comprometer a correção, a r
 | Nova funcionalidade ser adicionada pelo agente sem estar na spec | Média | Alto | Incluir a proibição no `CLAUDE.md`, revisar diffs e rejeitar alterações de negócio que não tenham requisito correspondente |
 | Uma mudança futura exigir alteração em muitos pontos do sistema | Média | Médio/Alto | Manter política centralizada, motor isolado de I/O e decisões individuais como fonte única para o resumo |
 
-### Riscos aceitos na baseline v3
+### Riscos aceitos e limitações conhecidas
 
 Alguns riscos são conhecidos e aceitos conscientemente porque não podem ser eliminados com os dados disponíveis.
 
@@ -905,6 +1173,24 @@ Esse risco é aceito porque a entrada não contém um indicador estruturado de v
 O sistema utiliza `despesas[].data` para verificar competência, embora a política utilize o termo "lançada".
 
 Esse risco é aceito porque não existe uma data específica de submissão ou lançamento na entrada.
+
+#### Dependência dos dados de política
+
+Um arquivo de política incorreto pode produzir limites incorretos mesmo quando o motor estiver funcionando conforme especificado.
+
+Esse risco é mitigado pela validação estrutural, mas a aplicação considera os valores fornecidos como fonte de verdade.
+
+#### Dependência das cotações fornecidas
+
+O motor não valida as taxas contra uma fonte externa.
+
+Uma taxa incorreta no conjunto recebido produzirá conversão incorreta de forma determinística.
+
+#### Cotação histórica ausente
+
+Uma despesa pode ser recusada mesmo existindo uma cotação futura para sua moeda.
+
+Esse risco é aceito porque a spec proíbe utilizar informação cambial posterior à data da despesa.
 
 ### Critério de reação a riscos encontrados durante a implementação
 

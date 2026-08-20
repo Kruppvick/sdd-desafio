@@ -83,3 +83,30 @@ def test_rn020_escolhe_a_mais_recente_entre_cotacoes_anteriores():
     )
 
     assert valor == Decimal("51.00")
+
+def test_rn021_moeda_sem_cotacao_retorna_none():
+    valor = converter_para_brl(
+        valor_original=Decimal("20.00"),
+        moeda="GBP",
+        data=date(2026, 7, 10),
+        cotacoes={},
+    )
+
+    assert valor is None
+
+
+def test_rn021_nao_utiliza_cotacao_futura():
+    cotacoes = {
+        "USD": {
+            date(2026, 7, 11): Decimal("5.30"),
+        }
+    }
+
+    valor = converter_para_brl(
+        valor_original=Decimal("20.00"),
+        moeda="USD",
+        data=date(2026, 7, 10),
+        cotacoes=cotacoes,
+    )
+
+    assert valor is None
